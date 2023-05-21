@@ -38,7 +38,6 @@ class User:
                 "private_key": private_key,
                 "public_key": public_key
             })
-            private_key.e
             return private_key, public_key
         elif self.algorithm == 2:
             # get dsa private key and elgamal public key pair
@@ -76,9 +75,4 @@ class User:
             print("[ERROR] incorrect password")
 
     def show_keychain_private(self, password_in):
-
-        while not self.verified_user_password(password_in=input("[ENTER PASSWORD] >:")):
-            print("[ERROR] incorrect password")
-        print(f"==============\n[PRIVATE KEY]\n")
-        for index, pair in enumerate(self.my_keychain):
-            print(f"{index}) {pair.get('private_key')}\n")
+        pass

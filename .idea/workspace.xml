@@ -11,14 +11,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7caa11a4-dcf7-4c52-a933-eb8f5daa723a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/classes/mailbox.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/classes/user.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/modules.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/modules.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/user_class/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/classes/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/user_class/user.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/classes/mailbox.py" beforeDir="false" afterPath="$PROJECT_DIR$/classes/mailbox.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/classes/user.py" beforeDir="false" afterPath="$PROJECT_DIR$/classes/user.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -114,30 +109,30 @@
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
     <state x="95" y="235" width="1736" height="896" key="DiffContextDialog/0.0.1920.1080/1920.0.1920.1080@0.0.1920.1080" timestamp="1684698036625" />
-    <state width="1899" height="392" key="GridCell.Tab.0.bottom" timestamp="1684694208496">
+    <state width="1695" height="392" key="GridCell.Tab.0.bottom" timestamp="1684698315795">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state width="1899" height="392" key="GridCell.Tab.0.bottom/0.0.1920.1080/1920.0.1920.1080@0.0.1920.1080" timestamp="1684694208496" />
-    <state width="1899" height="392" key="GridCell.Tab.0.center" timestamp="1684694208496">
+    <state width="1695" height="392" key="GridCell.Tab.0.bottom/0.0.1920.1080/1920.0.1920.1080@0.0.1920.1080" timestamp="1684698315795" />
+    <state width="1695" height="392" key="GridCell.Tab.0.center" timestamp="1684698315795">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state width="1899" height="392" key="GridCell.Tab.0.center/0.0.1920.1080/1920.0.1920.1080@0.0.1920.1080" timestamp="1684694208496" />
-    <state width="1899" height="392" key="GridCell.Tab.0.left" timestamp="1684694208496">
+    <state width="1695" height="392" key="GridCell.Tab.0.center/0.0.1920.1080/1920.0.1920.1080@0.0.1920.1080" timestamp="1684698315795" />
+    <state width="1695" height="392" key="GridCell.Tab.0.left" timestamp="1684698315795">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state width="1899" height="392" key="GridCell.Tab.0.left/0.0.1920.1080/1920.0.1920.1080@0.0.1920.1080" timestamp="1684694208496" />
-    <state width="1899" height="392" key="GridCell.Tab.0.right" timestamp="1684694208496">
+    <state width="1695" height="392" key="GridCell.Tab.0.left/0.0.1920.1080/1920.0.1920.1080@0.0.1920.1080" timestamp="1684698315795" />
+    <state width="1695" height="392" key="GridCell.Tab.0.right" timestamp="1684698315795">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state width="1899" height="392" key="GridCell.Tab.0.right/0.0.1920.1080/1920.0.1920.1080@0.0.1920.1080" timestamp="1684694208496" />
+    <state width="1695" height="392" key="GridCell.Tab.0.right/0.0.1920.1080/1920.0.1920.1080@0.0.1920.1080" timestamp="1684698315795" />
     <state x="461" y="185" key="SettingsEditor" timestamp="1684486049855">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
     <state x="461" y="185" key="SettingsEditor/0.0.1920.1080/1920.0.1920.1080@0.0.1920.1080" timestamp="1684486049855" />
-    <state x="552" y="273" key="Vcs.Push.Dialog.v2" timestamp="1684695776855">
+    <state x="552" y="273" key="Vcs.Push.Dialog.v2" timestamp="1684698210904">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state x="552" y="273" key="Vcs.Push.Dialog.v2/0.0.1920.1080/1920.0.1920.1080@0.0.1920.1080" timestamp="1684695776855" />
+    <state x="552" y="273" key="Vcs.Push.Dialog.v2/0.0.1920.1080/1920.0.1920.1080@0.0.1920.1080" timestamp="1684698210904" />
     <state x="92" y="92" width="1736" height="896" key="com.intellij.history.integration.ui.views.DirectoryHistoryDialog" timestamp="1684698036625">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
