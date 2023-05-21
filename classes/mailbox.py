@@ -10,7 +10,7 @@ class MailBox:
         signature_state = input("[OPTION] do you want to signe the message (y/n) >: ")
         if signature_state.lower() == 'y':
             signature_key_index = input(f"{self.show_keychain_private} >:")
-            signature_key =
+            signature_key = 0
 
 
 
