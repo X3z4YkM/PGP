@@ -1,56 +1,128 @@
-from Crypto.Hash import SHA256
+from Crypto.Hash import SHA1
 from Crypto.Random import get_random_bytes
-
 from Crypto.PublicKey import RSA, DSA, ElGamal
-
+from modules.modules import get_current_time
+import itertools
+from collections import defaultdict
+from Cryptodome.Cipher import CAST
 
 class User:
-    def __init__(self, name, email, algo, key_size, key_pass):
+    _ids = itertools.count(0)
+
+    def __init__(self, name, email):
+        self.id = next(self._ids)
         self.name = name
         self.email = email
-        self.algorithm = algo
-        self.key_size = key_size
-        hasher = SHA256.new()
-        hasher.update(key_pass.encode('utf-8'))
-        self.key_password = hasher.hexdigest()
-        self.my_keychain = []
+        self.local_keychain = []
+        self.PR_key_pass_dic = defaultdict(list)
+        """
+        This is a dictionary for mapping password private_key pair
+        because many keys can be password protected by the same password
+        but also a different one 
+        soo this dic can help us track which hashed password is for which private_key
+        also this dic needs to me exported and imported when the user exists and logs back in
+        """
 
     def get_info(self):
+        """
+        this is for the user to see his information
+        this has to me  unmutable because  User_ID for  private key_chain
+        if the users email
+        """
         return {"name": self.name,
-                "email": self.email,
-                "algorithm": self.algorithm,
-                "key_size": self.key_size,
-                "key_password": self.key_password}
+                "email": self.email}
 
-    def verified_user_password(self, password_in):
-        hasher = SHA256.new()
-        hasher.update(password_in.encode('utf-8'))
-        has_pass = hasher.hexdigest()
-        return self.key_password == has_pass
+    def verified_user_password(self, password_en, password_in):
+        sha1_hash = SHA1.new()
+        sha1_hash.update(password_in.encode('utf-8'))
+        has_pass = sha1_hash.hexdigest()
+
+        return password_en == has_pass
 
     def generate_key_pair(self):
-        if self.algorithm == 1:
+        algorithm = int(
+            input("Select algorithm:\n1)RSA encryption/signature\n2)DES signature and ElGamal encryption\n>: "))
+        key_size = int(input("Enter key size (1024 or 2048)\n>: "))
+
+        while key_size != 1024 and key_size != 2048:
+            key_size = int(input("Enter key size (1024 or 2048)\n>: "))
+
+        key_password = input("Enter password for private key\n>: ")
+        sha1_hash = SHA1.new()
+        sha1_hash.update(key_password.encode('utf-8'))
+        key_password = sha1_hash.hexdigest()
+        private_key = None
+        public_key = None
+
+        if algorithm == 1:
             # get rsa private and public key and save them into a .pem file
-            key = RSA.generate(self.key_size)
-            private_key = key.export_key(format='PEM', passphrase=self.key_password)
+            key = RSA.generate(key_size)
+            private_key = key.export_key(format='PEM', passphrase=key_password)
             public_key = key.publickey().export_key(format='PEM')
-            self.my_keychain.append({
-                "private_key": private_key,
-                "public_key": public_key
-            })
-            private_key.e
-            return private_key, public_key
-        elif self.algorithm == 2:
+            self.PR_key_pass_dic[key_password].append(private_key)
+
+        elif algorithm == 2:
             # get dsa private key and elgamal public key pair
-            keyDes = DSA.generate(self.key_size)
-            keyElGamal = ElGamal.generate(self.key_size, get_random_bytes)
-            private_key = keyDes.export_key(format='PAM', passphrase=self.key_password)
-            public_key = keyElGamal.publickey().export_key()
-            self.my_keychain.append({
-                "private_key": private_key,
-                "public_key": public_key
-            })
-            return private_key, public_key
+            keyDes = DSA.generate(key_size)
+            keyElGamal = ElGamal.generate(key_size, get_random_bytes)
+            private_key = keyDes.export_key(format='PEM', passphrase=key_password)
+            public_key = keyElGamal.publickey()
+            self.PR_key_pass_dic[key_password].append(private_key)
+
+        # now we format for the key_chain so that we can export theam
+        """
+            key_chain public
+            ===============================================================================================
+            --time_stamp-Key_ID--Public_KEY--Owner_Trust--User_ID---Key_Legit--Signature--Signature_trust--
+            |           |      |           |            |         |                |         |            |
+            |           |      |           |            |         |                |         |            |
+            ------------------------------------------------------------------------------------------------
+            |           |      |           |            |         |                |         |            |
+            |           |      |           |            |         |                |         |            |
+            ===============================================================================================
+        """
+        PU_time_of_creation = get_current_time()  # get current time in format 2023-05-25 15:04:08
+        key_to_int = int.from_bytes(public_key, byteorder='big')  # convert key to integer
+        PU_key_ID = key_to_int & ((1 << 64) - 1)  # now we get the least significant 64 bits
+        PU_owner_Trust = True
+        PU_user_ID = self.id
+
+        """
+        key_chain private
+        ============================================================
+        --time_stamp--Key_ID--Public_Key--Encrypted_PR_key--User_D--
+        |           |       |           |                 |        |
+        |           |       |           |                 |        |
+        ------------------------------------------------------------
+        |           |       |           |                 |        |
+        |           |       |           |                 |        |
+        ============================================================
+        """
+        PR_time_of_creation = get_current_time()
+        key_to_int = int.from_bytes(private_key, byteorder='big')  # convert key to integer
+        PR_key_ID = key_to_int & ((1 << 64) - 1)  # now we get the least significant 64 bits
+        cast128_object = CAST.new(key_password, CAST.MODE_ECB)
+        # Pad the message to be a multiple of 8 bytes (block size of CAST-128)
+        padded_key = private_key.rjust(8 * ((len(private_key) + 7) // 8))
+        encrypted_PR_key = cast128_object.encrypt(padded_key)
+
+        self.local_keychain.append({
+            "private_key": private_key,
+            "public_key": public_key,
+            "public_key_info": {
+                "time_of_creation": PU_time_of_creation,
+                "key_id": PU_key_ID,
+                "owner_trust": PU_owner_Trust,
+                "user_id": PU_user_ID
+            },
+            "private_key_info": {
+                "time_of_creation": PR_time_of_creation,
+                "key_id": PR_key_ID,
+                "public_key": public_key,
+                "encrypted_pr_key": encrypted_PR_key,
+                "user_id": self.email
+            }
+        })
 
     def import_key_from_file(self, path):
         print("[IMPORT STARTED] ...")
@@ -68,17 +140,12 @@ class User:
         print("[EXPORTED KEY] ...")
 
     def show_key_chain(self, password_in):
-
-        if self.verified_user_password(password_in):
-            for pair in self.my_keychain:
+        for pair in self.my_keychain:
+            if self.verified_user_password(pair.get('password'), password_in):
                 print(f"==============\n[PRIVATE KEY]{pair.get('private_key')}\n[PUBLIC KEY]{pair.get('public_key')}\n")
-        else:
-            print("[ERROR] incorrect password")
 
     def show_keychain_private(self, password_in):
-
-        while not self.verified_user_password(password_in=input("[ENTER PASSWORD] >:")):
-            print("[ERROR] incorrect password")
         print(f"==============\n[PRIVATE KEY]\n")
         for index, pair in enumerate(self.my_keychain):
-            print(f"{index}) {pair.get('private_key')}\n")
+            if self.verified_user_password(pair.get('password'), password_in):
+                print(f"{index}) {pair.get('private_key')}\n")
