@@ -3,13 +3,14 @@ from modules import modules
 from modules import constants
 import time
 import zlib
+import pickle
 from Crypto.Hash import SHA1
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.PublicKey import DSA
 from Crypto.Signature import DSS
 from Crypto.PublicKey import ElGamal
-
+from Crypto.Random import get_random_bytes
 
 MessageDict = {
     "filename": None,
@@ -47,9 +48,8 @@ PGPMessageDict = {
 }
 
 
-def construct_message(filename, message, message_time, sign_encrypt_choice, signing_key, encryption_key, session_algorythm,
-                      session_key, use_zip, use_radix64):
-
+def construct_message(filename, message, message_time, sign_encrypt_choice, signing_key, encryption_key,
+                      session_algorythm, session_key, use_zip, use_radix64):
     my_message = MessageDict.copy()
     my_message["filename"] = filename
     my_message["data"] = message
@@ -60,7 +60,7 @@ def construct_message(filename, message, message_time, sign_encrypt_choice, sign
     my_pgp["zip"] = use_zip
 
     my_signature = SignatureDict.copy()
-    #id for key pair of sender
+    # id for key pair of sender
     my_signature["sender_key_id"] = signing_key.public_key().export_key()[-8:].hex()
     my_signature["leading_octets"]
 
@@ -83,46 +83,60 @@ def construct_message(filename, message, message_time, sign_encrypt_choice, sign
     my_message_signature["signature"] = signature
 
     my_session_key = SessionKeyDict.copy()
-    #id for key pair for recipient
-    my_session_key["recipient_key_id"] = encryption_key.export()[-8:].hex()
+    # id for key pair for recipient
+    my_session_key["recipient_key_id"] = encryption_key.export_key(format='DER')[-8:].hex()
     my_session_key["session_key_cypher"] = session_key_component
 
     my_payload = PayloadDict.copy()
     my_payload["session_key"] = my_session_key
     if use_zip:
-        payload = my_message_signature
+        payload = zip_payload(my_message_signature)
     else:
-        my_payload = my_message_signature
-    my_payload["encrypted_data"] =
+        payload = my_message_signature
+    # TODO payload = enc(payload)
+    my_payload["encrypted_data"] = payload
+    my_pgp["payload"] = my_payload
+    # TODO use radix on my_pgp
+    return my_pgp
 
 
-def signature_rsa(message_hash, signing_key):
+def signature_rsa(message_hash, signing_key: RSA.RsaKey):
     cipher = PKCS1_OAEP.new(signing_key)
     signed_hash = cipher.encrypt(message_hash)
     print("Signed Hash RSA:", signed_hash.hex())
     return signed_hash
 
 
-def signature_dsa(message_hash, signing_key):
+def signature_dsa(message_hash, signing_key: DSA.DsaKey):
     signer = DSS.new(signing_key, 'fips-186-3')
     signed_hash = signer.sign(message_hash)
     print("Signed Hash DSA:", signed_hash.hex())
     return signed_hash
 
 
-def encrypt_rsa(encryption_key, session_key):
+def encrypt_rsa(encryption_key: RSA.RsaKey, session_key):
     cipher_rsa = PKCS1_OAEP.new(encryption_key)
     encrypted_session_key = cipher_rsa.encrypt(session_key)
     print("Encrypted Session Key:", encrypted_session_key.hex())
     return encrypted_session_key
 
 
-def encrypt_elgamal(encryption_key, session_key):
+def encrypt_elgamal(encryption_key: ElGamal.ElGamalKey, session_key):
     encrypted_session_key = encryption_key.encrypt(session_key, None)
     print("Encrypted Key:", encrypted_session_key.hex())
     return encrypted_session_key
 
+
 def zip_payload(payload):
-    return zlib.compress(payload.encode())
+    return zlib.compress(pickle.dumps(payload))
+
+
 def unzip_payload(payload):
-    return zlib.decompress(payload.dencode())
+    return zlib.decompress(pickle.loads(payload))
+
+def generate_session_key(session_algorythm):
+    if session_algorythm == constants.ALGORYTHM_AES:
+        return get_random_bytes(16)
+    elif session_algorythm == constants.ALGORYTHM_CAST
+        pass
+

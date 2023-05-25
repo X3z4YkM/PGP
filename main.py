@@ -1,14 +1,33 @@
 from classes.mailbox import MailBox
+from classes.pgp import construct_message
 from modules.modules import clear_terminal
 from classes.user import User
+from modules import constants
+import time
+import os
+from Cryptodome.PublicKey import ElGamal
+from Crypto.PublicKey import RSA, DSA, ElGamal
 
 mailboxAgent = MailBox()
+
+
 def main():
     print("=======================__PGP__===========================")
     print("=========================================================")
     name = input("Enter your name\n>: ")
     email = input("Enter your email\n>: ")
     user = User(name, email)
+
+    key = RSA.generate(2048)
+    # public_key = key.publickey()
+    # print(key.export_key(format='DER').hex())
+    # print(public_key.export_key(format='DER').hex())
+
+    keyDes = DSA.generate(2048)
+    input("DSA generated\n>: ")
+    keyElGamal = ElGamal.generate(2048, os.urandom)
+    input("ElGamal generated\n>: ")
+    public_key = keyElGamal.publickey()
 
     state = 1
     while state != 0:
@@ -24,7 +43,9 @@ def main():
         if state == 5:
             user.show_key_chain(password_in=input("[ENTER PASSWORD] >:"))
         if state == 6:
-            mailboxAgent.send_message(user)
+            print(construct_message("filename", b"message poruka cao cao cao", time.time(),
+                                    constants.SIGN_ENC_DSA_ELGAMAL, keyDes, public_key,
+                                    "session_algorythm", b"1234567890123456", True, True))
 
 
 if __name__ == '__main__':
