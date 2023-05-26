@@ -1,5 +1,5 @@
 from classes.mailbox import MailBox
-from classes.pgp import construct_message
+from classes.pgp import *
 from modules.modules import clear_terminal
 from classes.user import User
 from modules import constants
@@ -18,16 +18,11 @@ def main():
     email = input("Enter your email\n>: ")
     user = User(name, email)
 
-    key = RSA.generate(2048)
-    # public_key = key.publickey()
-    # print(key.export_key(format='DER').hex())
-    # print(public_key.export_key(format='DER').hex())
-
-    keyDes = DSA.generate(2048)
-    input("DSA generated\n>: ")
-    keyElGamal = ElGamal.generate(2048, os.urandom)
-    input("ElGamal generated\n>: ")
-    public_key = keyElGamal.publickey()
+    message = b"Neka pristojna poruka za testiranje, ne znam kako cu prevodioce da polozim jebo me fakultet nezavrseni me jebo"
+    signing_key = RSA.generate(2048)
+    encryption_key = RSA.generate(2048)
+    print(construct_message("Poruka", message, time.time(), constants.SIGN_ENC_RSA, signing_key, encryption_key,
+                            constants.ALGORYTHM_NONE, use_signature=True, use_zip=True, use_radix64=False))
 
     state = 1
     while state != 0:
