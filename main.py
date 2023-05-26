@@ -40,6 +40,10 @@ def main():
         if state == 2:
             user.generate_key_pair()
             print("key pair successfully generated ...")
+        if state == 3:
+            user.export_private_key(path=f'./private/{user.name}/keys/')
+        if state == 4:
+            user.import_private_key(f'./private/{user.name}/keys/file.pem')
         if state == 5:
             user.show_key_chain(password_in=input("[ENTER PASSWORD] >:"))
         if state == 6:

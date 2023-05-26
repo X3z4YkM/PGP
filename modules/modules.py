@@ -22,3 +22,8 @@ def get_parameters_global(val):
 
 def get_current_time():
     return datetime.now()
+
+def create_path(path):
+    os.makedirs(path, exist_ok=True)
+    file_path = os.path.join(path, 'file.pem')
+    return file_path
