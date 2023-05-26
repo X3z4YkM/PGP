@@ -22,9 +22,9 @@ def main():
             user.generate_key_pair()
             print("key pair successfully generated ...")
         if state == 3:
-            user.export_key_to_file(user.local_keychain, f'./private/{user.name}/keys/')
+            user.export_private_key(path=f'./private/{user.name}/keys/')
         if state == 4:
-            user.import_key_from_file(f'./private/{user.name}/keys/file.pem')
+            user.import_private_key(f'./private/{user.name}/keys/file.pem')
         if state == 5:
             user.show_key_chain(password_in=input("[ENTER PASSWORD] >:"))
         if state == 6:
