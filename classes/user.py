@@ -30,15 +30,8 @@ class User:
 
         return password_en == has_pass
 
-    def generate_key_pair(self):
-        algorithm = int(
-            input("Select algorithm:\n1)RSA encryption/signature\n2)DES signature and ElGamal encryption\n>: "))
-        key_size = int(input("Enter key size (1024 or 2048)\n>: "))
+    def generate_key_pair(self, algorithm, key_size, key_password):
 
-        while key_size != 1024 and key_size != 2048:
-            key_size = int(input("Enter key size (1024 or 2048)\n>: "))
-
-        key_password = input("Enter password for private key\n>: ")
         sha1_hash = SHA1.new()
         sha1_hash.update(key_password.encode('utf-8'))
         key_password = sha1_hash.digest()[:16]

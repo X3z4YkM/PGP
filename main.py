@@ -18,11 +18,16 @@ def main():
     email = input("Enter your email\n>: ")
     user = User(name, email)
 
+    user.generate_key_pair()
+
     message = b"Neka pristojna poruka za testiranje, ne znam kako cu prevodioce da polozim jebo me fakultet nezavrseni me jebo"
     signing_key = RSA.generate(2048)
     encryption_key = RSA.generate(2048)
-    print(construct_message("Poruka", message, time.time(), constants.SIGN_ENC_RSA, signing_key, encryption_key,
-                            constants.ALGORYTHM_NONE, use_signature=True, use_zip=True, use_radix64=False))
+    result = construct_message("Poruka", message, time.time(), constants.SIGN_ENC_RSA, signing_key, encryption_key,
+                               constants.ALGORITHM_NONE, use_signature=False, use_zip=True, use_radix64=True)
+    print(result)
+    extract_and_validate_message(result, user)
+
 
     state = 1
     while state != 0:
@@ -33,7 +38,15 @@ def main():
         if state == 1:
             print(user.get_info())
         if state == 2:
-            user.generate_key_pair()
+            algorithm = int(
+                input("Select algorithm:\n1)RSA encryption/signature\n2)DES signature and ElGamal encryption\n>: "))
+            key_size = int(input("Enter key size (1024 or 2048)\n>: "))
+
+            while key_size != 1024 and key_size != 2048:
+                key_size = int(input("Enter key size (1024 or 2048)\n>: "))
+
+            key_password = input("Enter password for private key\n>: ")
+            user.generate_key_pair(algorithm, key_size, key_password)
             print("key pair successfully generated ...")
         if state == 3:
             user.export_private_key(path=f'./private/{user.name}/keys/')
@@ -42,9 +55,7 @@ def main():
         if state == 5:
             user.show_key_chain(password_in=input("[ENTER PASSWORD] >:"))
         if state == 6:
-            print(construct_message("filename", b"message poruka cao cao cao", time.time(),
-                                    constants.SIGN_ENC_DSA_ELGAMAL, keyDes, public_key,
-                                    "session_algorythm", b"1234567890123456", True, True))
+            pass
 
 
 if __name__ == '__main__':
