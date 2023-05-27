@@ -1,4 +1,3 @@
-from classes.mailbox import MailBox
 from classes.pgp import *
 from modules.modules import clear_terminal
 from classes.user import User
@@ -8,8 +7,6 @@ import os
 from Cryptodome.PublicKey import ElGamal
 from Crypto.PublicKey import RSA, DSA, ElGamal
 
-mailboxAgent = MailBox()
-
 
 def main():
     print("=======================__PGP__===========================")
@@ -17,12 +14,16 @@ def main():
     name = input("Enter your name\n>: ")
     email = input("Enter your email\n>: ")
     user = User(name, email)
+    passphrase = "GavriloNub"
 
-    user.generate_key_pair()
+    user.generate_key_pair(1, 1024, passphrase)
+    user.generate_key_pair(2, 1024, passphrase)
+
+    keychain = user.get_keychain()
+    user.export_private_key(f'./private/{user.name}/keys/{user.email}_{hex(keychain[0]["key_id"])}.pem', keychain[0]["key_id"])
 
     message = b"Neka pristojna poruka za testiranje, ne znam kako cu prevodioce da polozim jebo me fakultet nezavrseni me jebo"
-    signing_key = RSA.generate(2048)
-    encryption_key = RSA.generate(2048)
+
     result = construct_message("Poruka", message, time.time(), constants.SIGN_ENC_RSA, signing_key, encryption_key,
                                constants.ALGORITHM_NONE, use_signature=False, use_zip=True, use_radix64=True)
     print(result)

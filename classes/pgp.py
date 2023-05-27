@@ -61,8 +61,28 @@ ReceivedDict = {
 }
 
 
-def construct_message(filename, message, message_time, sign_encrypt_choice, signing_key, encryption_key,
+def construct_message(filename, message, message_time, passphrase, signing_key, encryption_key,
                       session_algorithm, use_signature, use_zip, use_radix64):
+    if user.check_rsa_key_header_public(encryption_key["public_key"]) and user.check_rsa_key_header_private(
+            signing_key["private_key"]):
+        sign_encrypt_choice = constants.SIGN_ENC_RSA
+        signing_key_real = RSA.import_key(extern_key=signing_key["private_key"], passphrase=passphrase)
+        encryption_key_real = RSA.import_key(encryption_key["public_key"])
+    elif user.check_dsa_key_header_public(encryption_key["public_key"]) and user.check_dsa_key_header_private(
+            signing_key["private_key"]):
+        sign_encrypt_choice = constants.SIGN_ENC_DSA_ELGAMAL
+        signing_key_real = DSA.import_key(extern_key=signing_key["private_key"], passphrase=passphrase)
+        encryption_key_real = ElGamal.construct(DSA.import_key(encryption_key["public_key"]).domain())
+    else:
+        raise ValueError("Selected keys not both RSA or DSA!")
+    _construct_message(filename, message, message_time, sign_encrypt_choice, signing_key_real, signing_key["key_id"],
+                       encryption_key_real, encryption_key["key_id"], session_algorithm, use_signature, use_zip,
+                       use_radix64)
+    pass
+
+
+def _construct_message(filename, message, message_time, sign_encrypt_choice, signing_key, signing_key_id,
+                       encryption_key, encryption_key_id, session_algorithm, use_signature, use_zip, use_radix64):
     my_message = MessageDict.copy()
     my_message["filename"] = filename
     my_message["data"] = message
@@ -82,7 +102,7 @@ def construct_message(filename, message, message_time, sign_encrypt_choice, sign
 
     if use_signature:
         # id for key pair of sender
-        my_signature["sender_key_id"] = signing_key.public_key().export_key(format='DER')[-8:].hex()
+        my_signature["sender_key_id"] = signing_key_id
         signature_timestamp = time.time()
         my_signature["timestamp"] = my_message["signature_timestamp"] = signature_timestamp
         message_hash = SHA1.new(pickle.dumps(my_message)).digest()
@@ -106,7 +126,7 @@ def construct_message(filename, message, message_time, sign_encrypt_choice, sign
         else:
             raise ValueError("Invalid signature+encryption choice.")
         # id for key pair for recipient
-        my_session_key_component["recipient_key_id"] = encryption_key.export_key(format='DER')[-8:].hex()
+        my_session_key_component["recipient_key_id"] = encryption_key_id
         my_session_key_component["session_key_cypher"] = session_key_encrypted
 
     # combine message and signature
@@ -157,7 +177,7 @@ def extract_and_validate_message(received_data, user: User):
         if my_pgp["authentication"] == constants.SIGN_ENC_RSA:
             session_key = decrypt_rsa(decryption_key, my_pgp["payload"]["session_key_component"]["session_key_cypher"])
         elif my_pgp["authentication"] == constants.SIGN_ENC_DSA_ELGAMAL:
-            elgamal_key =  ElGamal.construct(DSA.import_key(decryption_key).domain())
+            elgamal_key = ElGamal.construct(DSA.import_key(decryption_key).domain())
             session_key = decrypt_elgamal(elgamal_key, my_pgp["payload"]["session_key_component"]["session_key_cypher"])
         else:
             raise ValueError("Unknown signing/key encryption algorithm.")
