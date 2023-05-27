@@ -6,6 +6,7 @@ from Crypto.PublicKey import RSA, DSA, ElGamal
 from modules.modules import get_current_time, create_path
 import itertools
 from Cryptodome.Cipher import CAST
+from Crypto.Util.Padding import pad, unpad
 import re
 
 public_key_chain = []
@@ -29,6 +30,13 @@ class User:
         has_pass = sha1_hash.digest()[:16]
 
         return password_en == has_pass
+
+    def decrypt_private_key(self, encrypted_pr_key, key_password):
+        sha1_hash = SHA1.new()
+        sha1_hash.update(key_password.encode())
+        key_password = sha1_hash.digest()[:16]
+        cast128_object = CAST.new(key_password, CAST.MODE_ECB)
+        return unpad(cast128_object.decrypt(encrypted_pr_key), CAST.block_size)
 
     def generate_key_pair(self, algorithm, key_size, key_password):
 
@@ -58,7 +66,7 @@ class User:
         key_id_temp = int.from_bytes(public_key, byteorder='big')
         key_ID = key_id_temp & ((1 << 64) - 1)
         cast128_object = CAST.new(key_password, CAST.MODE_ECB)
-        padded_key = private_key.rjust(8 * ((len(private_key) + 7) // 8))
+        padded_key = pad(private_key, CAST.block_size)
         encrypted_PR_key = cast128_object.encrypt(padded_key)
 
         self.local_keychain.append({
@@ -102,7 +110,7 @@ class User:
             sha1_hash.update(key_password.encode())
             key_password = sha1_hash.digest()[:16]
             cast128_object = CAST.new(key_password, CAST.MODE_ECB)
-            private_key_decrypted = cast128_object.decrypt(encrypted_pr_key)
+            private_key_decrypted = unpad(cast128_object.decrypt(encrypted_pr_key), CAST.block_size)
 
             self.local_keychain.append({
                 "private_key": private_key_decrypted,
