@@ -4,31 +4,46 @@ from classes.user import User
 from modules import constants
 import time
 import os
-from Cryptodome.PublicKey import ElGamal
 from Crypto.PublicKey import RSA, DSA, ElGamal
 
 
 def main():
     print("=======================__PGP__===========================")
     print("=========================================================")
+    pp = pprint.PrettyPrinter(depth=4)
     name = input("Enter your name\n>: ")
     email = input("Enter your email\n>: ")
     user = User(name, email)
-    passphrase = "GavriloNub"
+    key_password = "GavriloNub"
 
-    user.generate_key_pair(1, 1024, passphrase)
-    user.generate_key_pair(2, 1024, passphrase)
+    key = DSA.generate(1024)
+    elg = ElGamal.generate()
 
-    keychain = user.get_keychain()
-    user.export_private_key(f'./private/{user.name}/keys/{user.email}_{hex(keychain[0]["key_id"])}.pem', keychain[0]["key_id"])
+    user.generate_key_pair(1, 1024, key_password)
+    user.generate_key_pair(2, 1024, key_password)
 
-    message = b"Neka pristojna poruka za testiranje, ne znam kako cu prevodioce da polozim jebo me fakultet nezavrseni me jebo"
+    key_id_hex_string0 = hex(int.from_bytes(user.private_key_chain[0]["key_id"], byteorder='big'))
+    key_id_hex_string1 = hex(int.from_bytes(user.private_key_chain[1]["key_id"], byteorder='big'))
+    # user.export_private_key(f'./private/{user.name}/keys/{user.email}_{key_id_hex_string0}.pem', user.private_key_chain[0]["key_id"])
+    # user.import_private_key(f'./private/{user.name}/keys/{user.email}_{key_id_hex_string0}.pem', key_password)
+    # user.export_private_key(f'./private/{user.name}/keys/{user.email}_{key_id_hex_string1}.pem', user.private_key_chain[1]["key_id"])
+    # user.import_private_key(f'./private/{user.name}/keys/{user.email}_{key_id_hex_string1}.pem', key_password)
 
-    result = construct_message("Poruka", message, time.time(), constants.SIGN_ENC_RSA, signing_key, encryption_key,
-                               constants.ALGORITHM_NONE, use_signature=False, use_zip=True, use_radix64=True)
+    user.export_public_key(f'./public/{user.name}/keys/{user.email}_{key_id_hex_string0}.pem', user.private_key_chain[0]["key_id"])
+    user.import_public_key(f'./public/{user.name}/keys/{user.email}_{key_id_hex_string0}.pem')
+    user.export_public_key(f'./public/{user.name}/keys/{user.email}_{key_id_hex_string1}.pem', user.private_key_chain[1]["key_id"])
+    user.import_public_key(f'./public/{user.name}/keys/{user.email}_{key_id_hex_string1}.pem')
+
+    pp.pprint(user.private_key_chain)
+
+    message = b"Neka pristojna poruka za testiranje, ne znam kako cu prevodioce da polozim jebo me fakultet nezavrseni"
+
+    result = construct_message("Poruka", message, time.time(), key_password, user.private_key_chain[1],
+                               user.public_key_chain[1], constants.ALGORITHM_AES, use_signature=True, use_zip=False,
+                               use_radix64=False)
     print(result)
-    extract_and_validate_message(result, user)
-
+    extracted = extract_and_validate_message(result, user)
+    pp.pprint(extracted)
 
     state = 1
     while state != 0:
