@@ -13,7 +13,7 @@ from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP, DES3, AES
 from Crypto.PublicKey import DSA, ElGamal
 from Crypto.Signature import DSS, PKCS1_v1_5
-from Crypto.Random import get_random_bytes
+from Crypto.Random import get_random_bytes, random
 from Crypto.Util.Padding import pad, unpad
 
 MessageDict = {
@@ -62,22 +62,29 @@ ReceivedDict = {
 
 
 def construct_message(filename, message, message_time, key_password, signing_key_record, encryption_key_record,
-                      session_algorithm, use_signature, use_zip, use_radix64):
-    signing_key_pem = User.decrypt_private_key(signing_key_record["private_key"], key_password)
-    if user.check_rsa_key_header_private(signing_key_pem):
-        sign_encrypt_choice = constants.SIGN_ENC_RSA
-        signing_key = RSA.import_key(signing_key_pem)
-        encryption_key = RSA.import_key(encryption_key_record["public_key"])
-    elif user.check_dsa_key_header_private(signing_key_pem):
-        sign_encrypt_choice = constants.SIGN_ENC_DSA_ELGAMAL
-        signing_key = DSA.import_key(signing_key_pem)
-        if session_algorithm != constants.ALGORITHM_NONE:
-            encryption_key = ElGamal.construct(DSA.import_key(encryption_key_record["public_key"]).domain())
-    else:
-        raise ValueError("Selected keys not RSA or DSA!")
+                      sign_encrypt_choice, session_algorithm, use_signature, use_zip, use_radix64):
+    signing_key_id = None
+    encryption_key_id = None
 
-    signing_key_id = signing_key_record["key_id"]
-    encryption_key_id = encryption_key_record["key_id"]
+    if sign_encrypt_choice is not None:
+        if use_signature:
+            signing_key_pem = User.decrypt_private_key(signing_key_record["private_key"], key_password)
+            if sign_encrypt_choice == constants.SIGN_ENC_RSA:
+                signing_key = RSA.import_key(signing_key_pem)
+            elif sign_encrypt_choice == constants.SIGN_ENC_DSA_ELGAMAL:
+                signing_key = DSA.import_key(signing_key_pem)
+            else:
+                raise ValueError("Selected keys not RSA or DSA!")
+        if session_algorithm is not None:
+            if sign_encrypt_choice == constants.SIGN_ENC_RSA:
+                encryption_key = RSA.import_key(encryption_key_record["public_key"])
+            elif sign_encrypt_choice == constants.SIGN_ENC_DSA_ELGAMAL:
+                encryption_key = DSA.import_key(encryption_key_record["public_key"])
+            else:
+                raise ValueError("Selected keys not RSA or DSA!")
+
+        signing_key_id = signing_key_record["key_id"]
+        encryption_key_id = encryption_key_record["key_id"]
 
     my_message = MessageDict.copy()
     my_message["filename"] = filename
@@ -115,6 +122,7 @@ def construct_message(filename, message, message_time, key_password, signing_key
     # encrypt session key
     if session_algorithm != constants.ALGORITHM_NONE:
         print("Generated session key", session_key)
+
         if sign_encrypt_choice == constants.SIGN_ENC_RSA:
             session_key_encrypted = encrypt_rsa(encryption_key, session_key)
         elif sign_encrypt_choice == constants.SIGN_ENC_DSA_ELGAMAL:
@@ -144,14 +152,17 @@ def construct_message(filename, message, message_time, key_password, signing_key
     my_payload["session_key_component"] = my_session_key_component
     my_payload["data"] = processed_message_signature
     my_pgp["payload"] = my_payload
-    return base64.b64encode(pickle.dumps(my_pgp)) if use_radix64 else pickle.dumps(my_pgp)
+    return b'radixb64' + base64.b64encode(pickle.dumps(my_pgp)) if use_radix64 else pickle.dumps(my_pgp)
 
 
-def extract_and_validate_message(received_data, user: User):
+def extract_and_validate_message_1(received_data):
     pp = pprint.PrettyPrinter(depth=4)
 
     my_received = ReceivedDict.copy()
-    my_pgp = pickle.loads(decode_if_base64(received_data))
+    if received_data[:8] == b'radixb64':
+        my_pgp = pickle.loads(decode_if_base64(received_data[8:]))
+    else:
+        my_pgp = pickle.loads(received_data)
     print("my_pgp")
     print(my_pgp["radix64"])
     print("zipped:", my_pgp["zip"])
@@ -159,15 +170,25 @@ def extract_and_validate_message(received_data, user: User):
     print(my_pgp["secrecy"])
     print(my_pgp["authentication"])
     pp.pprint(my_pgp["payload"])
-    data_message_signature = my_pgp["payload"]["data"]
+    return my_pgp, my_pgp["payload"]["session_key_component"]["recipient_key_id"]
 
+
+def extract_and_validate_message_2(my_pgp, user: User, key_password):
+    data_message_signature = my_pgp["payload"]["data"]
     if my_pgp["secrecy"] != constants.ALGORITHM_NONE:
-        decryption_key = user.search_private_key(my_pgp["payload"]["session_key_component"]["recipient_key_id"])
+        decryption_key_record = user.search_private_key(my_pgp["payload"]["session_key_component"]["recipient_key_id"])
+        decryption_key = User.decrypt_private_key(decryption_key_record["private_key"], key_password)
         if my_pgp["authentication"] == constants.SIGN_ENC_RSA:
-            session_key = decrypt_rsa(decryption_key, my_pgp["payload"]["session_key_component"]["session_key_cypher"])
+            rsa_key = RSA.import_key(decryption_key)
+            session_key = decrypt_rsa(rsa_key, my_pgp["payload"]["session_key_component"]["session_key_cypher"])
         elif my_pgp["authentication"] == constants.SIGN_ENC_DSA_ELGAMAL:
-            elgamal_key = ElGamal.construct(DSA.import_key(decryption_key).domain())
-            session_key = decrypt_elgamal(elgamal_key, my_pgp["payload"]["session_key_component"]["session_key_cypher"])
+            if my_pgp["secrecy"] == constants.ALGORITHM_AES:
+                session_key_size = 16
+            elif my_pgp["secrecy"] == constants.ALGORITHM_DES3:
+                session_key_size = 24
+            elgamal_key = DSA.import_key(decryption_key)
+            session_key = decrypt_elgamal(elgamal_key, my_pgp["payload"]["session_key_component"]["session_key_cypher"],
+                                          session_key_size)
         else:
             raise ValueError("Unknown signing/key encryption algorithm.")
 
@@ -188,9 +209,10 @@ def extract_and_validate_message(received_data, user: User):
     deserialized_message_signature = pickle.loads(unzipped_message_signature)
 
     my_message = deserialized_message_signature["message"]
+    my_received = ReceivedDict.copy()
     my_received["message"] = str(my_message["filename"]) + "\n" + datetime.datetime.fromtimestamp(
         my_message["timestamp"]).strftime('%H:%M:%S %d-%m-%Y') + "\n" + str(my_message["data"])
-    my_signature = decrypted_message_signature["signature"]
+    my_signature = deserialized_message_signature["signature"]
     # check signature
     if my_pgp["signed"]:
         my_received["signature"] = my_signature["signature"]
@@ -210,6 +232,8 @@ def extract_and_validate_message(received_data, user: User):
                 user.search_public_key(my_signature["sender_key_id"])["public_key"])
             my_received["signature_valid"] = verify_dsa(message_hash, my_signature["signature"],
                                                         signature_decryption_key)
+        else:
+            raise ValueError("Unknown combination algorithm", my_pgp["authentication"])
     return my_received
 
 
@@ -251,16 +275,35 @@ def decrypt_rsa(decryption_key: RSA.RsaKey, encrypted_data):
     return data
 
 
-def encrypt_elgamal(encryption_key: ElGamal.ElGamalKey, data):
-    cipher = ElGamal.new(encryption_key)
-    encrypted_data = cipher.encrypt(data)
-    return encrypted_data
+def encrypt_elgamal(encryption_key: DSA.DsaKey, data):
+    val = encryption_key.__getattribute__("_key")
+    p = val["p"].__getattribute__("_value")
+    q = val["q"].__getattribute__("_value")
+    g = val["g"].__getattribute__("_value")
+    y = val["y"].__getattribute__("_value")
+    data_val = int.from_bytes(data, byteorder="big", signed=False)
+
+    k = random.randint(2, q - 1)
+    c1 = pow(g, k, p)
+    s = pow(y, k, p)
+    c2 = data_val * s % p
+
+    return {"c1": c1, "c2": c2}
 
 
-def decrypt_elgamal(decryption_key: ElGamal.ElGamalKey, encrypted_data):
-    cipher = PKCS1_OAEP.new(decryption_key)
-    data = cipher.decrypt(encrypted_data)
-    return data
+def decrypt_elgamal(decryption_key: DSA.DsaKey, encrypted_data, session_key_size):
+    val = decryption_key.__getattribute__("_key")
+    p = val["p"].__getattribute__("_value")
+    q = val["q"].__getattribute__("_value")
+    g = val["g"].__getattribute__("_value")
+    x = val["x"].__getattribute__("_value")
+    c1 = encrypted_data["c1"]
+    c2 = encrypted_data["c2"]
+
+    s = pow(c1, x, p)
+    s_inverse = pow(s, -1, p)
+    m = c2 * s_inverse % p
+    return m.to_bytes(session_key_size, byteorder="big", signed=False)
 
 
 def encrypt_des3(session_key, data):
