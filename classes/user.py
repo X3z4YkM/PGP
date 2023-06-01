@@ -260,6 +260,16 @@ class User:
         pattern2 =  r'^.*-----BEGIN PRIVATE'
         return re.match(pattern1, key_str) or re.match(pattern2, key_str)
 
+    def check_filter_heder(self, key_data, filter):
+        if filter == 'RSA':
+            key_str = key_data.decode('utf-8')
+            pattern1 = r'^.*-----BEGIN RSA PRIVATE'
+            return re.match(pattern1, key_str)
+        else:
+            key_str = key_data.decode('utf-8')
+            pattern2 = r'^.*-----BEGIN PRIVATE'
+            return re.match(pattern2, key_str)
+
     def show_key_chain(self, password_in):
         tem_arr = []
         if not self.local_keychain:
@@ -317,10 +327,35 @@ class User:
                 pass
         return tem_arr
 
+    def get_by_header(self, filter, password_in):
+        tem_arr = []
+        if not self.local_keychain:
+            return tem_arr
+
+        sha1_hash = SHA1.new()
+        sha1_hash.update(password_in.encode('utf-8'))
+        key_password = sha1_hash.digest()[:16]
+        cast128_object = CAST.new(key_password, CAST.MODE_ECB)
+        for pair in self.local_keychain:
+            try:
+                decrypted_key = cast128_object.decrypt(pair.get("private_key"))
+                decrypted_key = decrypted_key.replace(b' ', b'', 2)
+                if self.check_filter_heder(decrypted_key, filter):
+                    tem_arr.append({'key': decrypted_key, 'id': pair.get('key_id')})
+            except ValueError:
+                pass
+        return tem_arr
+
     def get_public_key_chain(self):
         temp_arr = []
         for pair in public_key_chain:
             temp_arr.append(pair.get('public_key'))
+        return temp_arr
+
+    def get_public_key_chain_alt(self):
+        temp_arr = []
+        for pair in public_key_chain:
+            temp_arr.append({'public_key': pair.get('public_key'), 'key_id':pair.get('key_id')})
         return temp_arr
 
     def search_public_key(self, key_id):

@@ -8,6 +8,7 @@ from gui.gui_export_public_keys import gui_export_public_keys
 from gui.gui_import_pr_keys import gui_import_private_key
 from gui.gui_import_pu_keys import gui_import_public_key
 from gui.gui_key_generator import gui_key_generator
+from gui.gui_message_send import gui_mess_send
 from gui.gui_view_global_keys import gui_view_global_keys
 from gui.gui_view_private_keys import gui_view_keys
 
@@ -18,8 +19,8 @@ def create_main_panel():
     global panel
     if panel is not None:
         panel.destroy()
-    panel = Frame(global_var.get('root'), bg='lightgray', height=100)
-    panel.grid(row=1, column=0, sticky='nsew')
+    panel = Frame(global_var.get('root'), bg='lightgray', highlightbackground="black", highlightthickness=1, height=100)
+    panel.grid(row=1, column=0, sticky='nsew', padx=10, pady=10)
 
 
 def info_info_user():
@@ -80,6 +81,7 @@ def file_export_pu_keys():
         gui_export_public_keys(panel)
         global_var['LAST_SELECTED_MENU_ITEM'] = 'export pu keys'
 
+
 def view_view_global_pu_keys():
     if global_var.get('LAST_SELECTED_MENU_ITEM') != 'view global keys':
         create_main_panel()
@@ -88,10 +90,24 @@ def view_view_global_pu_keys():
         global_var['LAST_SELECTED_MENU_ITEM'] = 'view global keys'
 
 
+def mess_send_message():
+    if global_var.get('LAST_SELECTED_MENU_ITEM') != 'view global keys':
+        create_main_panel()
+        global panel
+        gui_mess_send(panel)
+        global_var['LAST_SELECTED_MENU_ITEM'] = 'view global keys'
+    pass
+
+
+def mess_recive_message():
+    pass
+
+
 def gui_main_view(root):
-    root.resizable(width=False, height=False)
+    root.resizable(width=False, height=True)
     width = 600
-    height = 500
+    height = 550
+    root.minsize(width=width, height=height)
     screenwidth = root.winfo_screenwidth()
     screenheight = root.winfo_screenheight()
     alignstr = '%dx%d+%d+%d' % (width, height, (screenwidth - width) / 2, (screenheight - height) / 2)
@@ -117,8 +133,8 @@ def gui_main_view(root):
     menu_bar.add_cascade(label='View', menu=view_menu)
 
     mess_menu = Menu(menu_bar, tearoff=0)
-    mess_menu.add_command(label='send message')
-    mess_menu.add_command(label='receive message')
+    mess_menu.add_command(label='send message', command=mess_send_message)
+    mess_menu.add_command(label='receive message', command=mess_recive_message)
     menu_bar.add_cascade(label='Message', menu=mess_menu)
 
     info_menu = Menu(menu_bar, tearoff=0)
@@ -126,7 +142,7 @@ def gui_main_view(root):
     menu_bar.add_cascade(label='Info', menu=info_menu)
 
     global panel
-    panel = Frame(root, bg='lightgray', height=100)
+    panel = Frame(root, bg='lightgray', highlightbackground="black", highlightthickness=1, height=100)
     panel.grid(row=1, column=0, sticky='nsew')
     root.grid_rowconfigure(1, weight=1)
     root.grid_columnconfigure(0, weight=1)

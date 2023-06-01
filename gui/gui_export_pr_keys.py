@@ -21,19 +21,19 @@ def export():
     global user_input
     selected_indices = list_ids.curselection()
     user = global_var.get('user')
-    file_path = filedialog.asksaveasfilename(defaultextension=".pem")
     index_to_delete = []
-    if file_path:
-        for index in reversed(selected_indices):
-            try:
+    for index in reversed(selected_indices):
+        try:
+            file_path = filedialog.asksaveasfilename(defaultextension=".pem")
+            if file_path:
                 item = list_ids.get(index)
                 key_id = search_for_id(item)
                 user.export_private_key(file_path, key_id, user_input)
                 index_to_delete.append(index)
-            except ValueError:
-                pass
-        for index in index_to_delete:
-            list_ids.delete(index)
+        except ValueError:
+            pass
+    for index in index_to_delete:
+        list_ids.delete(index)
 
 
 def reset():
@@ -72,7 +72,6 @@ def gui_export_private_keys(root):
 
     button_reset = Button(panel2, text="reset", command=reset)
     button_reset.grid(row=0, column=1, padx=200, pady=10)
-
 
     title_label = Label(panel0, bg='lightgray', text="==============================\n|   " +
                                                      " EXPORT PRIVATE KEYS    |\n==============================")
