@@ -137,6 +137,6 @@ def unzip_payload(payload):
 def generate_session_key(session_algorythm):
     if session_algorythm == constants.ALGORYTHM_AES:
         return get_random_bytes(16)
-    elif session_algorythm == constants.ALGORYTHM_CAST
+    elif session_algorythm == constants.ALGORYTHM_CAST:
         pass
 
