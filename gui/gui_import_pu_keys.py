@@ -27,17 +27,23 @@ def import_files():
     global files
     if files:
         user = global_var.get('user')
+        remove_arr = []
         for index, path in enumerate(files):
             try:
                 user.import_public_key(path)
-                files.remove(path)
-                list_files.delete(index)
+                remove_arr.append({'path': path, 'index': index})
             except ValueError as error:
                 error_string = str(error)
                 error_handler(error_string[:30])
             except OSError as error:
                 error_string = str(error)
                 error_handler(error_string[:10])
+        index_counter = 0
+        for pair in remove_arr:
+            files.remove(pair.get('path'))
+            list_files.delete(pair.get('index') - index_counter)
+            index_counter += 1
+        remove_arr.clear()
 
 
 def select_file():

@@ -27,6 +27,7 @@ def import_files():
     global files
     if files:
         user = global_var.get('user')
+        remove_arr = []
         for index, path in enumerate(files):
             user_input = ""
             while user_input == "":
@@ -34,14 +35,20 @@ def import_files():
             if user_input is not None:
                 try:
                     user.import_private_key(path, user_input)
-                    files.remove(path)
-                    list_files.delete(index)
+                    remove_arr.append({'path': path, 'index': index})
                 except ValueError as error:
                     error_string = str(error)
                     error_handler(error_string[:30])
                 except OSError as error:
                     error_string = str(error)
                     error_handler(error_string[:10])
+
+        index_counter = 0
+        for pair in remove_arr:
+            files.remove(pair.get('path'))
+            list_files.delete(pair.get('index') - index_counter)
+            index_counter += 1
+        remove_arr.clear()
 
 
 def select_file():
@@ -90,7 +97,7 @@ def gui_import_private_key(root):
     import_button = Button(
         panel2,
         text='Import files',
-        command=lambda: import_files()
+        command=import_files
     )
     import_button.grid(row=1, column=0, padx=62, pady=0)
 

@@ -1,6 +1,9 @@
+from datetime import time
 from tkinter import *
 from tkinter import filedialog as fd, simpledialog
 from globals.global_vars import global_var
+from classes.pgp import construct_message
+from modules import constants
 
 panel0 = None
 panel1 = None
@@ -291,16 +294,16 @@ def send_message():
         enc_id = counter_enc
     algo_sig = None
     if rsa_var.get() and sign_var.get():
-        algo_sig = 'RSA'
+        algo_sig = constants.SIGN_ENC_RSA
     elif dsa_var.get() and sign_var.get():
-        algo_sig = 'DSA/ElGamal'
+        algo_sig = constants.SIGN_ENC_DSA_ELGAMAL
 
     algo_enc = None
 
     if aes_var.get() and en_var.get():
-        algo_enc = 'AES'
+        algo_enc = constants.ALGORYTHM_AES
     elif des3_var.get() and en_var.get():
-        algo_enc = 'DES3'
+        algo_enc = constants.ALGORYTHM_CAST
 
     zip_s = None
     radix64_s = None
@@ -316,6 +319,13 @@ def send_message():
     print(
         f"id of key for sing: {sig_id}\nid of key for encry: {enc_id}\nsing method: {algo_sig}\nencry methoid:{algo_enc}\n" +
         f"zipe: {zip_s}\nradix64: {radix64_s}\nmessage: {message}\n")
+
+    global file_path
+    global file_name
+
+    message_path_full = file_path.get() + file_name.get()
+    construct_message(message_path_full, message.encode(), time.time(), algo_sig, key_array_sign[sig_id],
+                      key_array_enc[enc_id], algo_enc, b"1234567890123456", zip_s, radix64_s)
 
 
 def gui_mess_send(root):
