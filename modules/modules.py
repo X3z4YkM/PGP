@@ -23,6 +23,7 @@ def get_parameters_global(val):
 def get_current_time():
     return datetime.now()
 
+
 def create_path(path):
     file_path = os.path.join(path)
     return file_path

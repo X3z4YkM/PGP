@@ -75,7 +75,7 @@ def gui_export_public_keys(root):
     button_reset.grid(row=0, column=1, padx=200, pady=10)
 
     title_label = Label(panel0, bg='lightgray', text="==============================\n|   " +
-                                                     " EXPORT PRIVATE KEYS    |\n==============================")
+                                                     " EXPORT PUBLIC KEYS    |\n==============================")
     title_label.grid(row=0, column=0, padx=160, pady=0)
     user_input = simpledialog.askstring("Input", f"Enter password: ")
     if user_input is not None:

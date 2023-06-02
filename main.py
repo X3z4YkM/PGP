@@ -1,14 +1,10 @@
-from classes.mailbox import MailBox
-from classes.pgp import construct_message
+from classes.pgp import *
 from modules.modules import clear_terminal
 from classes.user import User
 from modules import constants
 import time
 import os
-from Cryptodome.PublicKey import ElGamal
 from Crypto.PublicKey import RSA, DSA, ElGamal
-
-mailboxAgent = MailBox()
 
 
 def main():
@@ -17,17 +13,12 @@ def main():
     name = input("Enter your name\n>: ")
     email = input("Enter your email\n>: ")
     user = User(name, email)
+    key_password = "GavriloNub"
 
-    key = RSA.generate(2048)
-    # public_key = key.publickey()
-    # print(key.export_key(format='DER').hex())
-    # print(public_key.export_key(format='DER').hex())
+    user.generate_key_pair(1, 1024, key_password)
+    user.generate_key_pair(2, 1024, key_password)
 
-    keyDes = DSA.generate(2048)
-    input("DSA generated\n>: ")
-    keyElGamal = ElGamal.generate(2048, os.urandom)
-    input("ElGamal generated\n>: ")
-    public_key = keyElGamal.publickey()
+    testmain(user, key_password)
 
     state = 1
     while state != 0:
@@ -38,7 +29,15 @@ def main():
         if state == 1:
             print(user.get_info())
         if state == 2:
-            user.generate_key_pair()
+            algorithm = int(
+                input("Select algorithm:\n1)RSA encryption/signature\n2)DES signature and ElGamal encryption\n>: "))
+            key_size = int(input("Enter key size (1024 or 2048)\n>: "))
+
+            while key_size != 1024 and key_size != 2048:
+                key_size = int(input("Enter key size (1024 or 2048)\n>: "))
+
+            key_password = input("Enter password for private key\n>: ")
+            user.generate_key_pair(algorithm, key_size, key_password)
             print("key pair successfully generated ...")
         if state == 3:
             user.export_private_key(path=f'./private/{user.name}/keys/')
@@ -47,10 +46,74 @@ def main():
         if state == 5:
             user.show_key_chain(password_in=input("[ENTER PASSWORD] >:"))
         if state == 6:
-            print(construct_message("filename", b"message poruka cao cao cao", time.time(),
-                                    constants.SIGN_ENC_DSA_ELGAMAL, keyDes, public_key,
-                                    "session_algorythm", b"1234567890123456", True, True))
+            pass
 
 
 if __name__ == '__main__':
     main()
+
+def testmain(user: User, key_password):
+    pp = pprint.PrettyPrinter(depth=4)
+    key_id_hex_string0 = hex(int.from_bytes(user.private_key_chain[0]["key_id"], byteorder='big'))
+    key_id_hex_string1 = hex(int.from_bytes(user.private_key_chain[1]["key_id"], byteorder='big'))
+    user.export_private_key(f'./private/{user.name}/keys/{user.email}_{key_id_hex_string0}.pem', user.private_key_chain[0]["key_id"])
+    user.import_private_key(f'./private/{user.name}/keys/{user.email}_{key_id_hex_string0}.pem', key_password)
+    user.export_private_key(f'./private/{user.name}/keys/{user.email}_{key_id_hex_string1}.pem', user.private_key_chain[1]["key_id"])
+    user.import_private_key(f'./private/{user.name}/keys/{user.email}_{key_id_hex_string1}.pem', key_password)
+
+    user.export_public_key(f'./public/{user.name}/keys/{user.email}_{key_id_hex_string0}.pem',
+                           user.private_key_chain[0]["key_id"])
+    user.import_public_key(f'./public/{user.name}/keys/{user.email}_{key_id_hex_string0}.pem')
+    user.export_public_key(f'./public/{user.name}/keys/{user.email}_{key_id_hex_string1}.pem',
+                           user.private_key_chain[1]["key_id"])
+    user.import_public_key(f'./public/{user.name}/keys/{user.email}_{key_id_hex_string1}.pem')
+
+    message = b"Neka pristojna poruka za testiranje, ne znam kako cu prevodioce da polozim j*** me fakultet nezavrseni"
+
+    result = construct_message("Poruka", message, time.time(), key_password, user.private_key_chain[1],
+                               user.public_key_chain[1], constants.SIGN_ENC_DSA_ELGAMAL, constants.ALGORITHM_AES,
+                               use_signature=True, use_zip=True,
+                               use_radix64=True)
+    pp.pprint(result)
+    my_pgp, key_id = extract_and_validate_message_1(result)
+    # ask user for password for given key_id if key_id != None
+    extracted = extract_and_validate_message_2(my_pgp, user, key_password)
+    print("---------------")
+    pp.pprint(extracted)
+    print("---------------RED")
+
+    result = construct_message("Poruka", message, time.time(), key_password, user.private_key_chain[1],
+                               user.public_key_chain[1], constants.SIGN_ENC_DSA_ELGAMAL, constants.ALGORITHM_DES3,
+                               use_signature=True, use_zip=True,
+                               use_radix64=True)
+    pp.pprint(result)
+    my_pgp, key_id = extract_and_validate_message_1(result)
+    # ask user for password for given key_id if key_id != None
+    extracted = extract_and_validate_message_2(my_pgp, user, key_password)
+    print("---------------")
+    pp.pprint(extracted)
+    print("---------------RED")
+
+    result = construct_message("Poruka", message, time.time(), key_password, user.private_key_chain[0],
+                               user.public_key_chain[0], constants.SIGN_ENC_RSA, constants.ALGORITHM_AES,
+                               use_signature=True, use_zip=True,
+                               use_radix64=True)
+    pp.pprint(result)
+    my_pgp, key_id = extract_and_validate_message_1(result)
+    # ask user for password for given key_id if key_id != None
+    extracted = extract_and_validate_message_2(my_pgp, user, key_password)
+    print("---------------")
+    pp.pprint(extracted)
+    print("---------------RED")
+
+    result = construct_message("Poruka", message, time.time(), key_password, user.private_key_chain[0],
+                               user.public_key_chain[0], constants.SIGN_ENC_RSA, constants.ALGORITHM_DES3,
+                               use_signature=True, use_zip=True,
+                               use_radix64=True)
+    pp.pprint(result)
+    my_pgp, key_id = extract_and_validate_message_1(result)
+    # ask user for password for given key_id if key_id != None
+    extracted = extract_and_validate_message_2(my_pgp, user, key_password)
+    print("---------------")
+    pp.pprint(extracted)
+    print("---------------RED")

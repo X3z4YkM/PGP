@@ -6,10 +6,34 @@ from Crypto.PublicKey import RSA, DSA, ElGamal
 from modules.modules import get_current_time, create_path
 import itertools
 from Cryptodome.Cipher import CAST
+from Crypto.Util.Padding import pad, unpad
 import re
 from Cryptodome.Util.Padding import unpad
 
-public_key_chain = []
+
+def check_rsa_key_header_private(key_data):
+    key_str = key_data.decode('utf-8')
+    pattern = r'^.*-----BEGIN RSA PRIVATE KEY-----'
+    return re.match(pattern, key_str)
+
+
+def check_rsa_key_header_public(key_data):
+    key_str = key_data.decode('utf-8')
+    pattern = r'^.*-----BEGIN RSA PUBLIC KEY-----'
+    return re.match(pattern, key_str)
+
+
+def check_dsa_key_header_private(key_data):
+    key_str = key_data.decode('utf-8')
+    pattern = r'^.*-----BEGIN PRIVATE KEY-----'
+    return re.match(pattern, key_str)
+
+
+def check_dsa_key_header_public(key_data):
+    key_str = key_data.decode('utf-8')
+    pattern = r'^.*-----BEGIN PUBLIC KEY-----'
+    return re.match(pattern, key_str)
+
 
 class User:
     _ids = itertools.count(0)
@@ -18,60 +42,63 @@ class User:
         self.id = next(self._ids)
         self.name = name
         self.email = email
-        self.local_keychain = []
+        self.private_key_chain = []
+        self.public_key_chain = []
 
     def get_info(self):
         return f"[Name]: {self.name}\n[Email]: {self.email}\n"
 
-    def verified_user_password(self, password_en, password_in):
+    @staticmethod
+    def encrypt_private_key(private_key, key_password):
         sha1_hash = SHA1.new()
-        sha1_hash.update(password_in.encode('utf-8'))
-        has_pass = sha1_hash.digest()[:16]
-
-        return password_en == has_pass
+        sha1_hash.update(key_password.encode())
+        key_password = sha1_hash.digest()[:16]
+        cast128_object = CAST.new(key_password, CAST.MODE_ECB)
+        return cast128_object.encrypt(pad(private_key, CAST.block_size))
 
     def generate_key_pair(self, algorithm, key_size, key_password):
-        try:
-            sha1_hash = SHA1.new()
-            sha1_hash.update(key_password.encode('utf-8'))
-            key_password = sha1_hash.digest()[:16]
-            private_key = None
-            public_key = None
+        if algorithm == 'RSA':
+            # gen rsa private and public key and save them into a .pem file
+            key = RSA.generate(key_size)
+            private_key = key.export_key()
+            public_key = key.publickey().export_key()
 
-            if algorithm == 'RSA':
-                # gen rsa private and public key and save them into a .pem file
-                key = RSA.generate(key_size)
-                private_key = key.export_key(format='PEM')
-                public_key = key.publickey().export_key(format='PEM')
+        elif algorithm == 'DSA/Elgamal':
+            # gen dsa key pair
+            key = DSA.generate(key_size)
+            private_key = key.export_key()
+            public_key = key.public_key().export_key()
 
-            elif algorithm == 'DSA/Elgamal':
-                # gen dsa key pair
-                keyDsa = DSA.generate(key_size)
-                private_key = keyDsa.export_key(format='PEM')
-                public_key = keyDsa.public_key().export_key(format='PEM')
+        key_id = self.derive_key_id(public_key)
+        encrypted_pr_key = self.encrypt_private_key(private_key, key_password)
 
-            key_id_temp = int.from_bytes(public_key, byteorder='big')
-            key_ID = key_id_temp & ((1 << 64) - 1)
-            cast128_object = CAST.new(key_password, CAST.MODE_ECB)
-            padded_key = private_key.rjust(8 * ((len(private_key) + 7) // 8))
-            encrypted_PR_key = cast128_object.encrypt(padded_key)
-            self.local_keychain.append({
-                "private_key": encrypted_PR_key,
-                "public_key": public_key,
-                "password": key_password,
-                "key_id": key_ID,
-                "time_stamp": get_current_time(),
-                "user_id": self.email
-            })
+        self.private_key_chain.append({
+            "private_key": encrypted_pr_key,
+            "public_key": public_key,
+            "key_id": key_id,
+            "time_stamp": get_current_time(),
+            "user_id": self.email
+        })
 
-            public_key_chain.append({
-                "public_key": public_key,
-                "user_id": self.id,
-                "key_id": key_ID,
-                "time_stamp": get_current_time()
-            })
-        except ValueError as error:
-            raise error
+        self.public_key_chain.append({
+            "public_key": public_key,
+            "user_id": self.email,
+            "key_id": key_id,
+            "time_stamp": get_current_time()
+        })
+        return key
+
+    @staticmethod
+    def decrypt_private_key(encrypted_pr_key, key_password):
+        sha1_hash = SHA1.new()
+        sha1_hash.update(key_password.encode())
+        key_password = sha1_hash.digest()[:16]
+        cast128_object = CAST.new(key_password, CAST.MODE_ECB)
+        return unpad(cast128_object.decrypt(encrypted_pr_key), CAST.block_size)
+
+    @staticmethod
+    def derive_key_id(public_key):
+        return SHA1.new(public_key).digest()[-8:]
 
     def import_key_from_file_alter(self, path):
         print("[IMPORT STARTED] ...")
@@ -98,9 +125,9 @@ class User:
             sha1_hash.update(key_password.encode())
             key_password = sha1_hash.digest()[:16]
             cast128_object = CAST.new(key_password, CAST.MODE_ECB)
-            private_key_decrypted = cast128_object.decrypt(encrypted_pr_key)
+            private_key_decrypted = unpad(cast128_object.decrypt(encrypted_pr_key), CAST.block_size)
 
-            self.local_keychain.append({
+            self.private_key_chain.append({
                 "private_key": private_key_decrypted,
                 "public_key": public_key,
                 "public_key_info": {
@@ -140,74 +167,42 @@ class User:
         print("[EXPORTED KEY] ...")
 
     def import_private_key(self, path, key_password):
-        try:
-            file = open(path, 'rb')
-            key = file.read()
-            file.close()
-        except OSError as error:
-            raise error
-            return
+        print("[IMPORT STARTED] ...")
+        file = open(path, 'rb')
+        key_pem = file.read()
+        file.close()
+        decrypted_key = self.decrypt_private_key(key_pem, key_password)
 
-        try:
-            sha1_hash = SHA1.new()
-            sha1_hash.update(key_password.encode('utf-8'))
-            key_password = sha1_hash.digest()[:16]
-            cast128_object = CAST.new(key_password, CAST.MODE_ECB)
-            decrypted_key = cast128_object.decrypt(key)
-            decrypted_key = decrypted_key.replace(b' ', b'', 2)
-        except ValueError as error:
-            raise ValueError("[ERROR INCORRECT PASSWORD]")
-            return
-        try:
-            print("[IMPORT STARTED] ...")
-            if self.check_rsa_key_header_private(decrypted_key):
-                public_key = RSA.import_key(decrypted_key).public_key().export_key(format='PEM')
-                key_id_temp = int.from_bytes(public_key, byteorder='big')
-                key_ID = key_id_temp & ((1 << 64) - 1)
-            else:
-                public_key = DSA.import_key(key).public_key().export_key(format='PEM')
-                key_id_temp = int.from_bytes(public_key, byteorder='big')
-                key_ID = key_id_temp & ((1 << 64) - 1)
-
-            self.local_keychain.append({
-                "private_key": key,
-                "public_key": public_key,
-                "password": key_password,
-                "key_id": key_ID,
-                "time_stamp": get_current_time(),
-                "user_id": self.email
-            })
-            print("[IMPORTED KEY] ...")
-        except ValueError as error:
-            raise error
-            return
+        if check_rsa_key_header_private(decrypted_key):
+            public_key = RSA.import_key(decrypted_key).public_key().export_key(format='PEM')
+        elif check_dsa_key_header_private(decrypted_key):
+            public_key = DSA.import_key(decrypted_key).public_key().export_key(format='PEM')
+        else:
+            raise ValueError("Invalid or unknown key PEM format!")
+        key_id = self.derive_key_id(public_key)
+        self.private_key_chain.append({
+            "private_key": key_pem,
+            "public_key": public_key,
+            "password": key_password,
+            "key_id": key_id,
+            "time_stamp": get_current_time(),
+            "user_id": self.email
+        })
+        print("[IMPORTED KEY] ...")
 
     def export_private_key(self, path, key_id=None, key_password=""):
         if not path or key_id is None:
             return print("[MISSING PARAMETERS]")
-
         try:
-            for elem in self.local_keychain:
-                 if elem.get("key_id") == key_id:
-                    encrypted_pr_key = elem.get("private_key")
-                    sha1_hash = SHA1.new()
-                    sha1_hash.update(key_password.encode('utf-8'))
-                    key_password_hashed = sha1_hash.digest()[:16]
+            elem = self.search_private_key(key_id)
+            encrypted_pr_key = elem.get("private_key")
+            print("[EXPORT STARTED] ...")
+            create_path(path)
+            file = open(path, 'wb')
+            file.write(encrypted_pr_key)
+            file.close()
+            print("[EXPORTED KEY] ...")
 
-                    if key_password_hashed != elem.get("password"):
-                        raise ValueError("[ERROR INCORRECT PASSWORD]")
-
-                    print("[EXPORT STARTED] ...")
-
-                    file_path = create_path(path)
-                    file = open(file_path, 'wb')
-                    file.write(encrypted_pr_key)
-                    file.close()
-
-                    print("[EXPORTED KEY] ...")
-
-                    return
-            print("[ERROR KEY WASN'T FOUND]")
         except ValueError as e:
             print(str(e))
 
@@ -216,43 +211,33 @@ class User:
         file = open(path, 'rb')
         key = file.read()
         file.close()
-
-        print("[IMPORTED PUBLIC KEY]")
-        if self.check_rsa_key_header_public(key):
+        try:
             public_key = RSA.import_key(key).export_key(format='PEM')
-        else:
-            public_key = DSA.import_key(key).export_key(format='PEM')
+        except ValueError:
+            try:
+                public_key = DSA.import_key(key).export_key(format='PEM')
+            except ValueError:
+                raise ValueError("Invalid or unknown key PEM format!")
 
-        key_id_temp = int.from_bytes(public_key, byteorder='big')
-        key_ID = key_id_temp & ((1 << 64) - 1)
-        public_key_chain.append({
+        key_id = self.derive_key_id(public_key)
+        self.public_key_chain.append({
             "public_key": public_key,
             "user_id": self.id,
-            "key_id": key_ID,
+            "key_id": key_id,
             "time_stamp": get_current_time()
         })
+        print("[IMPORTED PUBLIC KEY]")
+
 
     def export_public_key(self, path, key_id=None):
-        for key in self.local_keychain:
-            if key.get('key_id') == key_id:
-                print("[EXPORT STARTED] ...")
-                file_path = create_path(path)
-                file = open(file_path, 'wb')
-                file.write(key.get("public_key"))
-                file.close()
-                print("[EXPORTED KEY] ...")
-                break
-        print("[ERROR KEY WASN'T FOUND]")
+        key = self.search_private_key(key_id)
+        print("[EXPORT STARTED] ...")
+        create_path(path)
+        file = open(path, 'wb')
+        file.write(key.get("public_key"))
+        file.close()
+        print("[EXPORTED KEY] ...")
 
-    def check_rsa_key_header_private(self, key_data):
-        key_str = key_data.decode('utf-8')
-        pattern = r'^.*-----BEGIN RSA PRIVATE KEY-----'
-        return re.match(pattern, key_str)
-
-    def check_rsa_key_header_public(self, key_data):
-        key_str = key_data.decode('utf-8')
-        pattern = r'^.*-----BEGIN RSA PUBLIC KEY-----'
-        return re.match(pattern, key_str)
 
     def check_heder(self, key_data):
         key_str = key_data.decode('utf-8')
@@ -272,17 +257,16 @@ class User:
 
     def show_key_chain(self, password_in):
         tem_arr = []
-        if not self.local_keychain:
+        if not self.private_key_chain:
             return tem_arr
 
         sha1_hash = SHA1.new()
         sha1_hash.update(password_in.encode('utf-8'))
         key_password = sha1_hash.digest()[:16]
         cast128_object = CAST.new(key_password, CAST.MODE_ECB)
-        for pair in self.local_keychain:
+        for pair in self.private_key_chain:
             try:
                 decrypted_key = cast128_object.decrypt(pair.get("private_key"))
-                decrypted_key = decrypted_key.replace(b' ', b'', 2)
                 if self.check_heder(decrypted_key):
                     tem_arr.append({'private_key': decrypted_key, 'public_key': pair.get('public_key')})
             except ValueError:
@@ -291,80 +275,86 @@ class User:
 
     def get_private_keys(self, password_in):
         tem_arr = []
-        if not self.local_keychain:
+        if not self.private_key_chain:
             return tem_arr
 
         sha1_hash = SHA1.new()
         sha1_hash.update(password_in.encode('utf-8'))
         key_password = sha1_hash.digest()[:16]
         cast128_object = CAST.new(key_password, CAST.MODE_ECB)
-        for pair in self.local_keychain:
+        for pair in self.private_key_chain:
             try:
                 decrypted_key = cast128_object.decrypt(pair.get("private_key"))
-                decrypted_key = decrypted_key.replace(b' ', b'', 2)
                 if self.check_heder(decrypted_key):
-                    tem_arr.append({'key': decrypted_key, 'id': pair.get('key_id')})
+                    tem_arr.append({'key': decrypted_key, 'id': pair.get('key_id'), 'pair':pair})
             except ValueError:
                 pass
         return tem_arr
 
     def get_my_public_keys(self, password_in):
         tem_arr = []
-        if not self.local_keychain:
+        if not self.private_key_chain:
             return tem_arr
 
         sha1_hash = SHA1.new()
         sha1_hash.update(password_in.encode('utf-8'))
         key_password = sha1_hash.digest()[:16]
         cast128_object = CAST.new(key_password, CAST.MODE_ECB)
-        for pair in self.local_keychain:
+        for pair in self.private_key_chain:
             try:
                 decrypted_key = cast128_object.decrypt(pair.get("private_key"))
-                decrypted_key = decrypted_key.replace(b' ', b'', 2)
                 if self.check_heder(decrypted_key):
-                    tem_arr.append({'key': pair.get('public_key'), 'id': pair.get('key_id')})
+                    tem_arr.append({'key': pair.get('public_key'), 'id': pair.get('key_id'), 'pair': pair})
             except ValueError:
                 pass
         return tem_arr
 
     def get_by_header(self, filter, password_in):
         tem_arr = []
-        if not self.local_keychain:
+        if not self.private_key_chain:
             return tem_arr
 
         sha1_hash = SHA1.new()
         sha1_hash.update(password_in.encode('utf-8'))
         key_password = sha1_hash.digest()[:16]
         cast128_object = CAST.new(key_password, CAST.MODE_ECB)
-        for pair in self.local_keychain:
+        for pair in self.private_key_chain:
             try:
                 decrypted_key = cast128_object.decrypt(pair.get("private_key"))
-                decrypted_key = decrypted_key.replace(b' ', b'', 2)
                 if self.check_filter_heder(decrypted_key, filter):
-                    tem_arr.append({'key': decrypted_key, 'id': pair.get('key_id')})
+                    tem_arr.append({'key': decrypted_key, 'id': pair.get('key_id'), 'pair': pair})
             except ValueError:
                 pass
         return tem_arr
 
     def get_public_key_chain(self):
         temp_arr = []
-        for pair in public_key_chain:
-            temp_arr.append(pair.get('public_key'))
+        for pair in self.public_key_chain:
+            temp_arr.append(pair)
         return temp_arr
 
     def get_public_key_chain_alt(self):
         temp_arr = []
-        for pair in public_key_chain:
-            temp_arr.append({'public_key': pair.get('public_key'), 'key_id':pair.get('key_id')})
+        for pair in self.public_key_chain:
+            temp_arr.append({'public_key': pair.get('public_key'), 'key_id': pair.get('key_id'), 'pair':pair})
         return temp_arr
 
+    def show_keychain_private(self, password_in):
+        print(f"==============\n[PRIVATE KEY]\n")
+
+        if not self.private_key_chain:
+            return print("[EMPTY LOCAL KEY CHAIN]")
+
+        for index, pair in enumerate(self.private_key_chain):
+            print(f"{index}) {pair.get('public_key')} {pair.get('private_key')}\n")
+
     def search_public_key(self, key_id):
-        for key in public_key_chain:
+        for key in self.public_key_chain:
             if key.get("key_id") == key_id:
                 return key
 
     def search_private_key(self, key_id):
-        """This method returns unencrypted private key"""
-        for key in self.local_keychain:
+        """This method returns encrypted private key"""
+        for key in self.private_key_chain:
             if key.get("key_id") == key_id:
                 return key

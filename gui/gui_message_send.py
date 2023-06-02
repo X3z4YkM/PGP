@@ -285,7 +285,7 @@ def send_message():
     global des3_var
     global en_var
     global text_input_text
-
+    global  user_input
     sig_id = None
     enc_id = None
     if sign_var.get():
@@ -293,17 +293,26 @@ def send_message():
     if en_var.get():
         enc_id = counter_enc
     algo_sig = None
+    use_signature = False
     if rsa_var.get() and sign_var.get():
         algo_sig = constants.SIGN_ENC_RSA
+        use_signature = True
     elif dsa_var.get() and sign_var.get():
         algo_sig = constants.SIGN_ENC_DSA_ELGAMAL
+        use_signature = True
+    elif not sign_var.get():
+        algo_sig = constants.SIGN_ENC_NONE
+        use_signature = False
 
     algo_enc = None
 
     if aes_var.get() and en_var.get():
-        algo_enc = constants.ALGORYTHM_AES
+        algo_enc = constants.ALGORITHM_AES
     elif des3_var.get() and en_var.get():
-        algo_enc = constants.ALGORYTHM_CAST
+        algo_enc = constants.ALGORITHM_DES3
+    elif not en_var.get():
+        algo_enc = constants.ALGORITHM_NONE
+
 
     zip_s = None
     radix64_s = None
@@ -324,9 +333,12 @@ def send_message():
     global file_name
 
     message_path_full = file_path.get() + file_name.get()
-    construct_message(message_path_full, message.encode(), time.time(), algo_sig, key_array_sign[sig_id],
-                      key_array_enc[enc_id], algo_enc, b"1234567890123456", zip_s, radix64_s)
+    print(message_path_full)
 
+    #(message_path_full, message.encode(), time.time(), user_input, key_array_sign[sig_id].get('pair'), key_array_enc[enc_id].get('pair'),
+              #        algo_sig, use_signature, zip_s, radix64_s)
+    print(f"{message_path_full}\n{message_path_full}\n{time}\n{user_input}\n{key_array_sign[sig_id].get('pair')}\n{key_array_enc[enc_id].get('pair')}"+
+          f"\n{algo_sig}\n{use_signature}\n{zip_s}\n{radix64_s}")
 
 def gui_mess_send(root):
     global panel0
