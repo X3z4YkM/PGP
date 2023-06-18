@@ -13,8 +13,8 @@ user_input = None
 
 def search_for_id(value):
     for elem in key_id_arr:
-        if elem.get('key') == value:
-            return elem.get('id')
+        if elem.get('public_key') == value:
+            return elem.get('key_id')
 
 
 def export():
@@ -40,12 +40,11 @@ def export():
 def reset():
     global user_input
     global key_id_arr
-    user_input = simpledialog.askstring("Input", f"Enter password: ")
-    if user_input is not None:
-        user = global_var.get('user')
-        key_id_arr = user.get_private_keys(user_input)
-        for elem in key_id_arr:
-            list_ids.insert(END, elem.get('key'))
+
+    user = global_var.get('user')
+    key_id_arr = user.get_public_key_chain()
+    for elem in key_id_arr:
+        list_ids.insert(END, elem.get('public_key'))
 
 
 def gui_export_public_keys(root):
@@ -77,9 +76,8 @@ def gui_export_public_keys(root):
     title_label = Label(panel0, bg='lightgray', text="==============================\n|   " +
                                                      " EXPORT PUBLIC KEYS    |\n==============================")
     title_label.grid(row=0, column=0, padx=160, pady=0)
-    user_input = simpledialog.askstring("Input", f"Enter password: ")
-    if user_input is not None:
-        user = global_var.get('user')
-        key_id_arr = user.get_my_public_keys(user_input)
-        for elem in key_id_arr:
-            list_ids.insert(END, elem.get('key'))
+
+    user = global_var.get('user')
+    key_id_arr = user.get_public_key_chain()
+    for elem in key_id_arr:
+        list_ids.insert(END, elem.get('public_key'))
