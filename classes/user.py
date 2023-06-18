@@ -8,6 +8,7 @@ import itertools
 from Cryptodome.Cipher import CAST
 from Crypto.Util.Padding import pad, unpad
 import re
+from Cryptodome.Util.Padding import unpad
 
 
 def check_rsa_key_header_private(key_data):
@@ -45,8 +46,7 @@ class User:
         self.public_key_chain = []
 
     def get_info(self):
-        return {"name": self.name,
-                "email": self.email}
+        return f"[Name]: {self.name}\n[Email]: {self.email}\n"
 
     @staticmethod
     def encrypt_private_key(private_key, key_password):
@@ -56,26 +56,14 @@ class User:
         cast128_object = CAST.new(key_password, CAST.MODE_ECB)
         return cast128_object.encrypt(pad(private_key, CAST.block_size))
 
-    @staticmethod
-    def decrypt_private_key(encrypted_pr_key, key_password):
-        sha1_hash = SHA1.new()
-        sha1_hash.update(key_password.encode())
-        key_password = sha1_hash.digest()[:16]
-        cast128_object = CAST.new(key_password, CAST.MODE_ECB)
-        return unpad(cast128_object.decrypt(encrypted_pr_key), CAST.block_size)
-
-    @staticmethod
-    def derive_key_id(public_key):
-        return SHA1.new(public_key).digest()[-8:]
-
     def generate_key_pair(self, algorithm, key_size, key_password):
-        if algorithm == 1:
+        if algorithm == 'RSA':
             # gen rsa private and public key and save them into a .pem file
             key = RSA.generate(key_size)
             private_key = key.export_key()
             public_key = key.publickey().export_key()
 
-        elif algorithm == 2:
+        elif algorithm == 'DSA/Elgamal':
             # gen dsa key pair
             key = DSA.generate(key_size)
             private_key = key.export_key()
@@ -99,6 +87,18 @@ class User:
             "time_stamp": get_current_time()
         })
         return key
+
+    @staticmethod
+    def decrypt_private_key(encrypted_pr_key, key_password):
+        sha1_hash = SHA1.new()
+        sha1_hash.update(key_password.encode())
+        key_password = sha1_hash.digest()[:16]
+        cast128_object = CAST.new(key_password, CAST.MODE_ECB)
+        return unpad(cast128_object.decrypt(encrypted_pr_key), CAST.block_size)
+
+    @staticmethod
+    def derive_key_id(public_key):
+        return SHA1.new(public_key).digest()[-8:]
 
     def import_key_from_file_alter(self, path):
         print("[IMPORT STARTED] ...")
@@ -190,7 +190,7 @@ class User:
         })
         print("[IMPORTED KEY] ...")
 
-    def export_private_key(self, path, key_id=None):
+    def export_private_key(self, path, key_id=None, key_password=""):
         if not path or key_id is None:
             return print("[MISSING PARAMETERS]")
         try:
@@ -228,6 +228,7 @@ class User:
         })
         print("[IMPORTED PUBLIC KEY]")
 
+
     def export_public_key(self, path, key_id=None):
         key = self.search_private_key(key_id)
         print("[EXPORT STARTED] ...")
@@ -238,13 +239,105 @@ class User:
         print("[EXPORTED KEY] ...")
 
 
-    def show_key_chain(self, password_in):
-        if not self.private_key_chain:
-            return print("[EMPTY LOCAL KEY CHAIN]")
+    def check_heder(self, key_data):
+        key_str = key_data.decode('utf-8')
+        pattern1 = r'^.*-----BEGIN RSA PRIVATE'
+        pattern2 =  r'^.*-----BEGIN PRIVATE'
+        return re.match(pattern1, key_str) or re.match(pattern2, key_str)
 
+    def check_filter_heder(self, key_data, filter):
+        if filter == 'RSA':
+            key_str = key_data.decode('utf-8')
+            pattern1 = r'^.*-----BEGIN RSA PRIVATE'
+            return re.match(pattern1, key_str)
+        else:
+            key_str = key_data.decode('utf-8')
+            pattern2 = r'^.*-----BEGIN PRIVATE'
+            return re.match(pattern2, key_str)
+
+    def show_key_chain(self, password_in):
+        tem_arr = []
+        if not self.private_key_chain:
+            return tem_arr
+
+        sha1_hash = SHA1.new()
+        sha1_hash.update(password_in.encode('utf-8'))
+        key_password = sha1_hash.digest()[:16]
+        cast128_object = CAST.new(key_password, CAST.MODE_ECB)
         for pair in self.private_key_chain:
-            if self.verified_user_password(pair.get('password'), password_in):
-                print(f"==============\n[PRIVATE KEY]{pair.get('private_key')}\n[PUBLIC KEY]{pair.get('public_key')}\n")
+            try:
+                decrypted_key = cast128_object.decrypt(pair.get("private_key"))
+                if self.check_heder(decrypted_key):
+                    tem_arr.append({'private_key': decrypted_key, 'public_key': pair.get('public_key')})
+            except ValueError:
+                pass
+        return tem_arr
+
+    def get_private_keys(self, password_in):
+        tem_arr = []
+        if not self.private_key_chain:
+            return tem_arr
+
+        sha1_hash = SHA1.new()
+        sha1_hash.update(password_in.encode('utf-8'))
+        key_password = sha1_hash.digest()[:16]
+        cast128_object = CAST.new(key_password, CAST.MODE_ECB)
+        for pair in self.private_key_chain:
+            try:
+                decrypted_key = cast128_object.decrypt(pair.get("private_key"))
+                if self.check_heder(decrypted_key):
+                    tem_arr.append({'key': decrypted_key, 'id': pair.get('key_id'), 'pair':pair})
+            except ValueError:
+                pass
+        return tem_arr
+
+    def get_my_public_keys(self, password_in):
+        tem_arr = []
+        if not self.private_key_chain:
+            return tem_arr
+
+        sha1_hash = SHA1.new()
+        sha1_hash.update(password_in.encode('utf-8'))
+        key_password = sha1_hash.digest()[:16]
+        cast128_object = CAST.new(key_password, CAST.MODE_ECB)
+        for pair in self.private_key_chain:
+            try:
+                decrypted_key = cast128_object.decrypt(pair.get("private_key"))
+                if self.check_heder(decrypted_key):
+                    tem_arr.append({'key': pair.get('public_key'), 'id': pair.get('key_id'), 'pair': pair})
+            except ValueError:
+                pass
+        return tem_arr
+
+    def get_by_header(self, filter, password_in):
+        tem_arr = []
+        if not self.private_key_chain:
+            return tem_arr
+
+        sha1_hash = SHA1.new()
+        sha1_hash.update(password_in.encode('utf-8'))
+        key_password = sha1_hash.digest()[:16]
+        cast128_object = CAST.new(key_password, CAST.MODE_ECB)
+        for pair in self.private_key_chain:
+            try:
+                decrypted_key = cast128_object.decrypt(pair.get("private_key"))
+                if self.check_filter_heder(decrypted_key, filter):
+                    tem_arr.append({'key': decrypted_key, 'id': pair.get('key_id'), 'pair': pair})
+            except ValueError:
+                pass
+        return tem_arr
+
+    def get_public_key_chain(self):
+        temp_arr = []
+        for pair in self.public_key_chain:
+            temp_arr.append(pair)
+        return temp_arr
+
+    def get_public_key_chain_alt(self):
+        temp_arr = []
+        for pair in self.public_key_chain:
+            temp_arr.append({'public_key': pair.get('public_key'), 'key_id': pair.get('key_id'), 'pair':pair})
+        return temp_arr
 
     def show_keychain_private(self, password_in):
         print(f"==============\n[PRIVATE KEY]\n")
