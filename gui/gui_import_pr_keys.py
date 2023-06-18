@@ -106,6 +106,7 @@ def gui_import_private_key(root):
         text='Open a File',
         command=select_file
     )
+
     open_button.grid(row=1, column=1, padx=70, pady=10)
     remove_button = Button(
         panel2,

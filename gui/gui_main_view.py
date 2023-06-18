@@ -9,6 +9,7 @@ from gui.gui_import_pr_keys import gui_import_private_key
 from gui.gui_import_pu_keys import gui_import_public_key
 from gui.gui_key_generator import gui_key_generator
 from gui.gui_message_send import gui_mess_send
+from gui.gui_recive_message import gui_recive_mess
 from gui.gui_view_global_keys import gui_view_global_keys
 from gui.gui_view_private_keys import gui_view_keys
 
@@ -26,12 +27,13 @@ def create_main_panel():
 def info_info_user():
     if global_var.get('LAST_SELECTED_MENU_ITEM') != 'user info':
         create_main_panel()
-        panel['padx'] = 150
+        panel['padx'] = 0
+        panel['pady'] = 0
         user = global_var.get('user')
         info = Label(panel,
                      bg='lightgray',
                      font=('Arial', 12),
-                     text='=========[USER INFO]=========\n\n' + user.get_info() + '\n=========================')
+                     text='=========[USER INFO]=========\n\n' + user.get_info() + '\n=============================')
         info.grid(row=0, column=0, padx=0, pady=0)
         global_var['LAST_SELECTED_MENU_ITEM'] = 'user info'
 
@@ -96,15 +98,19 @@ def mess_send_message():
         global panel
         gui_mess_send(panel)
         global_var['LAST_SELECTED_MENU_ITEM'] = 'view global keys'
-    pass
+
 
 
 def mess_recive_message():
-    pass
+    if global_var.get('LAST_SELECTED_MENU_ITEM') != 'view recive keys':
+        create_main_panel()
+        global panel
+        gui_recive_mess(panel)
+        global_var['LAST_SELECTED_MENU_ITEM'] = 'view recive keys'
 
 
 def gui_main_view(root):
-    root.resizable(width=False, height=True)
+    root.resizable(width=False, height=False)
     width = 600
     height = 550
     root.minsize(width=width, height=height)

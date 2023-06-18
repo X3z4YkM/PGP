@@ -40,7 +40,8 @@ text1_en = None
 zip_env = None
 radix64_ven = None
 text_input_text = None
-
+panelErrorPanel = None
+labelErrormMessage = None
 
 def select_directory():
     global file_path
@@ -100,29 +101,69 @@ def reste_view():
             text1.insert(END, key_array_sign[0].get('key'))
 
 
+was_selected = 0
+
+
 def toggle_options_sig():
     global panel2
     global selected
     global panel3
     global key_array_sign
     global counter_sign
+    global was_selected
+    global selected
+    global rsa_var
+    global dsa_var
+    global panel3
+    global panel4
+    global key_array_sign
+    global counter_sign
+    global text1
+    global user_input
+    global sign_var
 
-    if panel2.winfo_viewable():
-        panel2.grid_remove()
+    if sign_var.get():
         if panel3:
-            panel3.grid_remove()
-            panel4.grid_remove()
-        selected = 0
-        counter_sign = 0
+            panel3.destroy()
+            panel4.destroy()
+        panel3 = Frame(root_global, bg='lightgray', height=100)
+        panel3.grid(row=4, column=0, sticky='nsew')
 
-        rsa_var.set(False)
-        dsa_var.set(False)
-        key_array_sign = []
+        if selected != 0:
+            user_input = simpledialog.askstring("Input", f"Enter password: ")
+
+        pr_key_sc = Scrollbar(panel3, width=20)
+        pr_key_sc.grid(row=0, column=1, padx=0, pady=10)
+        text1 = Text(panel3, width=65, height=10)
+        text1.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+        pr_key_sc.config(command=text1.yview)
+        text1.config(yscrollcommand=pr_key_sc.set)
+        panel4 = Frame(root_global, bg='lightgray', height=100)
+        panel4.grid(row=5, column=0, sticky='nsew')
+        button_next = Button(panel4, text=">>", command=next_key)
+        button_prev = Button(panel4, text="<<", command=prev_key)
+        button_reset = Button(panel4, text="reset", command=reste_view)
+        button_next.grid(row=1, column=2, padx=30, pady=10)
+        button_reset.grid(row=1, column=1, padx=20, pady=10)
+        button_prev.grid(row=1, column=0, padx=10, pady=10)
+
+        user = global_var.get('user')
+
+        if selected == 1:
+            counter_sign = 0
+            key_array_sign = user.get_by_header('RSA', user_input)
+            text1.delete("1.0", END)
+            if len(key_array_sign) > 0:
+                text1.insert(END, key_array_sign[0].get('key'))
+        elif selected == 2:
+            counter_sign = 0
+            key_array_sign = user.get_by_header('DSA', user_input)
+            text1.delete("1.0", END)
+            if len(key_array_sign) > 0:
+                text1.insert(END, key_array_sign[0].get('key'))
     else:
-        panel2.grid(row=3, column=0, sticky='nsew')
-        if panel3:
-            panel3.grid_remove()
-            panel4.grid_remove()
+        panel3.destroy()
+        panel4.destroy()
 
 
 def show_key_sig(num):
@@ -135,47 +176,56 @@ def show_key_sig(num):
     global counter_sign
     global text1
     global user_input
+    global sign_var
+    global panel2
+    global panel5
+    global panel6
+    global panel7
+    global panel8
+    global aes_var
+    global des3_var
 
-    if panel3:
-        panel3.destroy()
-        panel4.destroy()
-    panel3 = Frame(root_global, bg='lightgray', height=100)
-    panel3.grid(row=4, column=0, sticky='nsew')
+    if not rsa_var.get() and not dsa_var.get():
+        if panel2:
+            panel2.grid_remove()
+        if panel5:
+            panel5.grid_remove()
+        if panel6:
+            panel6.grid_remove()
+        if panel7:
+            panel7.grid_remove()
+            panel8.grid_remove()
+        if panel3:
+            panel3.destroy()
+            panel4.destroy()
+        sign_var.set(False)
+        en_var.set(False)
+        aes_var.set(False)
+        des3_var.set(False)
+        selected = 0
+    else:
+        if selected == 1 and dsa_var.get():
+            rsa_var.set(False)
+        elif selected == 2 and rsa_var.get():
+            dsa_var.set(False)
+        panel2.grid(row=2, column=0, sticky='nsew')
+        panel5.grid(row=6, column=0, sticky='nsew')
 
-    if selected == 0:
-        user_input = simpledialog.askstring("Input", f"Enter password: ")
-    if selected == 1:
-        rsa_var.set(not rsa_var.get())
-    elif selected == 2:
-        dsa_var.set(not dsa_var.get())
     selected = num
-
-    pr_key_sc = Scrollbar(panel3, width=20)
-    pr_key_sc.grid(row=0, column=1, padx=0, pady=10)
-    text1 = Text(panel3, width=65, height=10)
-    text1.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-    pr_key_sc.config(command=text1.yview)
-    text1.config(yscrollcommand=pr_key_sc.set)
-    panel4 = Frame(root_global, bg='lightgray', height=100)
-    panel4.grid(row=5, column=0, sticky='nsew')
-    button_next = Button(panel4, text=">>", command=next_key)
-    button_prev = Button(panel4, text="<<", command=prev_key)
-    button_reset = Button(panel4, text="reset", command=reste_view)
-    button_next.grid(row=1, column=2, padx=30, pady=10)
-    button_reset.grid(row=1, column=1, padx=20, pady=10)
-    button_prev.grid(row=1, column=0, padx=10, pady=10)
-
-    user = global_var.get('user')
-    if selected == 1:
-        counter_sign = 0
-        key_array_sign = user.get_by_header('RSA', user_input)
-        text1.delete("1.0", END)
-        text1.insert(END, key_array_sign[0].get('key'))
-    elif selected == 2:
-        counter_sign = 0
-        key_array_sign = user.get_by_header('DSA', user_input)
-        text1.delete("1.0", END)
-        text1.insert(END, key_array_sign[0].get('key'))
+    if sign_var.get():
+        user = global_var.get('user')
+        if selected == 1:
+            counter_sign = 0
+            key_array_sign = user.get_by_header('RSA', user_input)
+            text1.delete("1.0", END)
+            if len(key_array_sign) > 0:
+                text1.insert(END, key_array_sign[0].get('key'))
+        elif selected == 2:
+            counter_sign = 0
+            key_array_sign = user.get_by_header('DSA', user_input)
+            text1.delete("1.0", END)
+            if len(key_array_sign) > 0:
+                text1.insert(END, key_array_sign[0].get('key'))
 
 
 selected_enc = 0
@@ -221,12 +271,14 @@ def key_show_enc(num):
     panel7 = Frame(root_global, bg='lightgray', height=100)
     panel7.grid(row=8, column=0, sticky='nsew')
 
-    if selected_enc == 1:
-        aes_var.set(not aes_var.get())
-    elif selected_enc == 2:
-        des3_var.set(not des3_var.get())
-
     selected_enc = num
+
+    if selected_enc == 1:
+        aes_var.set(True)
+        des3_var.set(False)
+    elif selected_enc == 2:
+        des3_var.set(True)
+        aes_var.set(False)
 
     pu_key_sc = Scrollbar(panel7, width=20)
     pu_key_sc.grid(row=0, column=1, padx=0, pady=10)
@@ -285,62 +337,101 @@ def send_message():
     global des3_var
     global en_var
     global text_input_text
-    global  user_input
-    sig_id = None
-    enc_id = None
-    if sign_var.get():
-        sig_id = counter_sign
-    if en_var.get():
-        enc_id = counter_enc
-    algo_sig = None
-    use_signature = False
-    if rsa_var.get() and sign_var.get():
-        algo_sig = constants.SIGN_ENC_RSA
-        use_signature = True
-    elif dsa_var.get() and sign_var.get():
-        algo_sig = constants.SIGN_ENC_DSA_ELGAMAL
-        use_signature = True
-    elif not sign_var.get():
-        algo_sig = constants.SIGN_ENC_NONE
-        use_signature = False
+    global user_input
+    global file_name
 
-    algo_enc = None
-
-    if aes_var.get() and en_var.get():
-        algo_enc = constants.ALGORITHM_AES
-    elif des3_var.get() and en_var.get():
-        algo_enc = constants.ALGORITHM_DES3
-    elif not en_var.get():
-        algo_enc = constants.ALGORITHM_NONE
-
-
-    zip_s = None
-    radix64_s = None
-
-    if zip_env.get():
-        zip_s = True
-    if radix64_ven.get():
-        radix64_s = True
+    message_path_full = file_path.get() + file_name.get()
 
     message = None
     if text_input_text.get("1.0", END).strip():
         message = text_input_text.get("1.0", END)
-    print(
-        f"id of key for sing: {sig_id}\nid of key for encry: {enc_id}\nsing method: {algo_sig}\nencry methoid:{algo_enc}\n" +
-        f"zipe: {zip_s}\nradix64: {radix64_s}\nmessage: {message}\n")
 
-    global file_path
-    global file_name
+    Sing_message_selected = False
 
-    message_path_full = file_path.get() + file_name.get()
-    print(message_path_full)
+    Sign_method = constants.SIGN_ENC_NONE
+    if sign_var.get():
+        Sing_message_selected = True
+        if rsa_var.get():
+            Sign_method = constants.SIGN_ENC_RSA
+        elif dsa_var.get():
+            Sign_method = constants.SIGN_ENC_DSA_ELGAMAL
 
-    #(message_path_full, message.encode(), time.time(), user_input, key_array_sign[sig_id].get('pair'), key_array_enc[enc_id].get('pair'),
-              #        algo_sig, use_signature, zip_s, radix64_s)
-    print(f"{message_path_full}\n{message_path_full}\n{time}\n{user_input}\n{key_array_sign[sig_id].get('pair')}\n{key_array_enc[enc_id].get('pair')}"+
-          f"\n{algo_sig}\n{use_signature}\n{zip_s}\n{radix64_s}")
+    private_sing_key_selected = None
+    if sign_var.get() and (rsa_var.get() or dsa_var.get()):
+        private_sing_key_selected = key_array_sign[0]
 
-def gui_mess_send(root):
+    Encrypt_message_selected = False
+
+    Encrypt_method = constants.ALGORITHM_NONE
+    if en_var.get():
+        Encrypt_message_selected = True
+        if aes_var.get():
+            Encrypt_method = constants.ALGORITHM_AES
+        elif des3_var.gett():
+            Encrypt_method = constants.ALGORITHM_DES3
+
+    public_encrypt_key_selected = None
+    if en_var.get() and (aes_var.get() or des3_var.gett()):
+        public_encrypt_key_selected = key_array_enc[0]
+
+    Zip_Selected = False
+
+    if zip_env.get():
+        Zip_Selected = True
+
+    Radix64_Selected = False
+
+    if radix64_ven.get():
+        Radix64_Selected = True
+
+    Error_Status = None
+    Error_Message = ""
+    # error check
+    if len(message_path_full)==0:
+        Error_Status = True
+        Error_Message += "Path not selected\n"
+    if public_encrypt_key_selected is None:
+        Error_Status = True
+        Error_Message += "No Public keys found\n"
+    if private_sing_key_selected is None:
+        Error_Status = True
+        Error_Message += "No Private keys found\n"
+
+    global root_global
+    global labelErrormMessage
+    global panelErrorPanel
+    if not Error_Status:
+        labelErrormMessage.config(text="")
+        construct_message(message_path_full, message, time.time(), user_input,
+                      private_sing_key_selected, public_encrypt_key_selected,
+                      Sign_method, Encrypt_method, Sing_message_selected, Zip_Selected, Radix64_Selected)
+    else:
+        panelErrorPanel = Frame(root_global, bg='lightgray', height=100)
+        panelErrorPanel.grid(row=20, column=0, sticky='nsew')
+        labelErrormMessage = Label(panelErrorPanel, bg='lightgray', fg='red', text=Error_Message)
+        labelErrormMessage.grid(row=0, column=0, padx=0, pady=2)
+
+canvas = None
+
+
+def configure_scroll_region(event):
+    canvas.configure(scrollregion=canvas.bbox("all"))
+
+
+def scroll_canvas(*args):
+    canvas.yview(*args)
+
+
+def gui_mess_send(rootin):
+    global canvas
+    canvas = Canvas(rootin, bg='lightgray', width=560, height=510)
+    canvas.grid(row=0, column=0, padx=0, pady=0)
+    scrollbar = Scrollbar(rootin, orient=VERTICAL, command=canvas.yview)
+    scrollbar.grid(row=0, column=1, sticky="ns")
+    canvas.configure(yscrollcommand=scrollbar.set)
+    frame = Frame(canvas)
+    canvas.create_window((0, 0), window=frame, anchor="nw")
+
     global panel0
     global file_path
     global file_name
@@ -361,16 +452,21 @@ def gui_mess_send(root):
     global des3_var
     global aes_cb
     global des3_cb
+    global labelErrormMessage
 
-    root_global = root
-    panel0 = Frame(root, bg='lightgray', height=100)
+    if labelErrormMessage:
+        labelErrormMessage.config(text="")
+
+    root_global = frame
+    panel0 = Frame(frame, bg='lightgray', height=100)
     panel0.grid(row=0, column=0, sticky='nsew')
 
-    panel1 = Frame(root, bg='lightgray', height=100)
+    panel1 = Frame(frame, bg='lightgray', height=100)
     panel1.grid(row=1, column=0, sticky='nsew')
 
-    panel2 = Frame(root, bg='lightgray', height=100)
+    panel2 = Frame(frame, bg='lightgray', height=100)
     panel2.grid(row=2, column=0, sticky='nsew')
+
     # ----------------FILE-------------
     file_path_label = Label(panel0, bg='lightgray', text="[SELECET PPATH]")
     file_path_label.grid(row=0, column=0, padx=10, pady=1)
@@ -387,27 +483,28 @@ def gui_mess_send(root):
     file_name.grid(row=3, column=0, padx=0, pady=2)
 
     # --------------AUTENTICNOST-------------
-    sign_lib = Label(panel1, bg='lightgray', text="Signe the message:")
+    sign_lib = Label(panel2, bg='lightgray', text="Signe the message:")
     sign_lib.grid(row=2, column=0, padx=0, pady=2)
 
     sign_var = BooleanVar()
     rsa_var = BooleanVar()
     dsa_var = BooleanVar()
 
-    signature_ckbox = Checkbutton(panel1, bg='lightgray', text="", command=toggle_options_sig, variable=sign_var)
+    signature_ckbox = Checkbutton(panel2, bg='lightgray', text="", command=toggle_options_sig, variable=sign_var)
     signature_ckbox.grid(row=2, column=1, padx=0, pady=2)
-
     panel2.grid_remove()
-    rsa_cb = Checkbutton(panel2, text='RSA', variable=rsa_var, command=lambda: show_key_sig(1))
-    dsa_elg_cb = Checkbutton(panel2, text='DSA/ElGamal', variable=dsa_var, command=lambda: show_key_sig(2))
+
+    rsa_cb = Checkbutton(panel1, text='RSA', bg='lightgray', variable=rsa_var, command=lambda: show_key_sig(1))
+    dsa_elg_cb = Checkbutton(panel1, text='DSA/ElGamal', bg='lightgray', variable=dsa_var,
+                             command=lambda: show_key_sig(2))
     rsa_cb.grid(row=0, column=0, sticky='nsew')
     dsa_elg_cb.grid(row=0, column=1, sticky='nsew')
 
     # ------------TAJNOST---------
-    panel5 = Frame(root, bg='lightgray', height=100)
+    panel5 = Frame(frame, bg='lightgray', height=100)
     panel5.grid(row=6, column=0, sticky='nsew')
 
-    panel6 = Frame(root, bg='lightgray', height=100)
+    panel6 = Frame(frame, bg='lightgray', height=100)
     panel6.grid(row=7, column=0, sticky='nsew')
 
     enc_lib = Label(panel5, bg='lightgray', text="Encrypt the message:")
@@ -420,6 +517,7 @@ def gui_mess_send(root):
     encrypt_xbox = Checkbutton(panel5, bg='lightgray', text=" ", variable=en_var, command=to_en_op)
     encrypt_xbox.grid(row=0, column=1, padx=0, pady=2)
 
+    panel5.grid_remove()
     panel6.grid_remove()
     aes_cb = Checkbutton(panel6, text='AES', command=lambda: key_show_enc(1), variable=aes_var)
     des3_cb = Checkbutton(panel6, text='TripleDES', command=lambda: key_show_enc(2), variable=des3_var)
@@ -430,7 +528,7 @@ def gui_mess_send(root):
     global panel9
     global zip_env
     global radix64_ven
-    panel9 = Frame(root, bg='lightgray', height=100)
+    panel9 = Frame(frame, bg='lightgray', height=100)
     panel9.grid(row=10, column=0, sticky='nsew')
 
     zip_env = BooleanVar()
@@ -444,7 +542,7 @@ def gui_mess_send(root):
     global panel10
     global text_input_text
 
-    panel10 = Frame(root, bg='lightgray', height=100)
+    panel10 = Frame(frame, bg='lightgray', height=100)
     panel10.grid(row=11, column=0, sticky='nsew')
     text_label = Label(panel10, bg='lightgray', text="==========[ENETER TEXT]==========")
     text_label.grid(row=0, column=0, padx=0, pady=2)
@@ -456,3 +554,6 @@ def gui_mess_send(root):
 
     send_button = Button(panel10, text="send", width=20, command=send_message)
     send_button.grid(row=2, column=0, padx=0, pady=2)
+
+    frame.bind("<Configure>", configure_scroll_region)
+    scrollbar.config(command=scroll_canvas)
