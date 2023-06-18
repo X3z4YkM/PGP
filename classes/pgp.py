@@ -75,6 +75,7 @@ def construct_message(filename, message, message_time, key_password, signing_key
                 signing_key = DSA.import_key(signing_key_pem)
             else:
                 raise ValueError("Selected keys not RSA or DSA!")
+            signing_key_id = signing_key_record["key_id"]
         if session_algorithm is not None:
             if sign_encrypt_choice == constants.SIGN_ENC_RSA:
                 encryption_key = RSA.import_key(encryption_key_record["public_key"])
@@ -82,9 +83,7 @@ def construct_message(filename, message, message_time, key_password, signing_key
                 encryption_key = DSA.import_key(encryption_key_record["public_key"])
             else:
                 raise ValueError("Selected keys not RSA or DSA!")
-
-        signing_key_id = signing_key_record["key_id"]
-        encryption_key_id = encryption_key_record["key_id"]
+            encryption_key_id = encryption_key_record["key_id"]
 
     my_message = MessageDict.copy()
     my_message["filename"] = filename

@@ -93,11 +93,11 @@ def view_view_global_pu_keys():
 
 
 def mess_send_message():
-    if global_var.get('LAST_SELECTED_MENU_ITEM') != 'view global keys':
+    if global_var.get('LAST_SELECTED_MENU_ITEM') != 'view message send':
         create_main_panel()
         global panel
         gui_mess_send(panel)
-        global_var['LAST_SELECTED_MENU_ITEM'] = 'view global keys'
+        global_var['LAST_SELECTED_MENU_ITEM'] = 'view message send'
 
 
 

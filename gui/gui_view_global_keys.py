@@ -13,7 +13,7 @@ def prev_key():
     if counter > 0:
         counter -= 1
         text0.delete("1.0", END)
-        text0.insert(END, key_array[counter].get('public_key'))
+        text0.insert(END, key_array[counter])
 
 
 def next_key():
@@ -21,7 +21,7 @@ def next_key():
     if counter < len(key_array) - 1:
         counter += 1
         text0.delete("1.0", END)
-        text0.insert(END, key_array[counter].get('public_key'))
+        text0.insert(END, key_array[counter])
 
 
 def gui_view_global_keys(root):
