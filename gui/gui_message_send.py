@@ -358,7 +358,8 @@ def send_message():
 
     private_sing_key_selected = None
     if sign_var.get() and (rsa_var.get() or dsa_var.get()):
-        private_sing_key_selected = key_array_sign[0]
+        if len(key_array_sign) > 0:
+            private_sing_key_selected = key_array_sign[0]
 
     Encrypt_message_selected = False
 
@@ -372,7 +373,8 @@ def send_message():
 
     public_encrypt_key_selected = None
     if en_var.get() and (aes_var.get() or des3_var.gett()):
-        public_encrypt_key_selected = key_array_enc[0]
+        if len(key_array_enc) > 0:
+            public_encrypt_key_selected = key_array_enc[0]
 
     Zip_Selected = False
 

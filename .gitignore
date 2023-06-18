@@ -2,3 +2,4 @@
 .idea
 /private
 /public
+__pycache__/
