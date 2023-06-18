@@ -9,7 +9,7 @@ from gui.gui_import_pr_keys import gui_import_private_key
 from gui.gui_import_pu_keys import gui_import_public_key
 from gui.gui_key_generator import gui_key_generator
 from gui.gui_message_send import gui_mess_send
-from gui.gui_recive_message import gui_recive_mess
+from gui.gui_receive_message import gui_receive_mess
 from gui.gui_view_global_keys import gui_view_global_keys
 from gui.gui_view_private_keys import gui_view_keys
 
@@ -101,11 +101,11 @@ def mess_send_message():
 
 
 
-def mess_recive_message():
+def mess_receive_message():
     if global_var.get('LAST_SELECTED_MENU_ITEM') != 'view recive keys':
         create_main_panel()
         global panel
-        gui_recive_mess(panel)
+        gui_receive_mess(panel)
         global_var['LAST_SELECTED_MENU_ITEM'] = 'view recive keys'
 
 
@@ -140,7 +140,7 @@ def gui_main_view(root):
 
     mess_menu = Menu(menu_bar, tearoff=0)
     mess_menu.add_command(label='send message', command=mess_send_message)
-    mess_menu.add_command(label='receive message', command=mess_recive_message)
+    mess_menu.add_command(label='receive message', command=mess_receive_message)
     menu_bar.add_cascade(label='Message', menu=mess_menu)
 
     info_menu = Menu(menu_bar, tearoff=0)
