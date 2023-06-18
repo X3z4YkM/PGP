@@ -1,4 +1,4 @@
-from datetime import time
+import time
 from tkinter import *
 from tkinter import filedialog as fd, simpledialog
 from globals.global_vars import global_var
@@ -43,6 +43,10 @@ text_input_text = None
 panelErrorPanel = None
 labelErrormMessage = None
 
+
+
+
+
 def select_directory():
     global file_path
     directory = fd.askdirectory()
@@ -55,6 +59,8 @@ def select_directory():
 
 selected = 0
 counter_sign = 0
+
+
 
 
 def prev_key():
@@ -253,6 +259,56 @@ def next_key_en():
         text1_en.delete("1.0", END)
         text1_en.insert(END, key_array_enc[counter_enc].get('public_key'))
 
+def resetPanles():
+    global panel2
+    global panel3
+    global panel4
+    global panel5
+    global panel6
+    global panel7
+    global panel8
+    global selected_enc
+    global selected
+    global key_array_enc
+    global key_array_sign
+    global zip_env
+    global radix64_ven
+    global file_name
+    global sign_var
+    global rsa_var
+    global dsa_var
+
+    if panel3:
+        panel3.destroy()
+        panel4.destroy()
+
+    if panel2:
+        panel2.grid_remove()
+    if panel5:
+        panel5.grid_remove()
+    if panel6:
+        panel6.grid_remove()
+    if panel7:
+        panel7.grid_remove()
+        panel8.grid_remove()
+    if panel3:
+        panel3.destroy()
+        panel4.destroy()
+
+    file_name.delete(0, END)
+    sign_var.set(False)
+    en_var.set(False)
+    aes_var.set(False)
+    des3_var.set(False)
+    zip_env.set(False)
+    radix64_ven.set(False)
+    sign_var.set(False)
+    rsa_var.set(False)
+    dsa_var.set(False)
+    selected = 0
+    selected_enc = 0
+    key_array_enc = []
+    key_array_sign = []
 
 def key_show_enc(num):
     global selected_enc
@@ -340,7 +396,7 @@ def send_message():
     global user_input
     global file_name
 
-    message_path_full = file_path.get() + file_name.get()
+    message_path_full = file_path.get() + '/' + file_name.get()
 
     message = None
     if text_input_text.get("1.0", END).strip():
@@ -359,7 +415,7 @@ def send_message():
     private_sing_key_selected = None
     if sign_var.get() and (rsa_var.get() or dsa_var.get()):
         if len(key_array_sign) > 0:
-            private_sing_key_selected = key_array_sign[0]
+            private_sing_key_selected = key_array_sign[0].get('pair')
 
     Encrypt_message_selected = False
 
@@ -374,7 +430,7 @@ def send_message():
     public_encrypt_key_selected = None
     if en_var.get() and (aes_var.get() or des3_var.gett()):
         if len(key_array_enc) > 0:
-            public_encrypt_key_selected = key_array_enc[0]
+            public_encrypt_key_selected = key_array_enc[0].get('pair')
 
     Zip_Selected = False
 
@@ -389,29 +445,56 @@ def send_message():
     Error_Status = None
     Error_Message = ""
     # error check
-    if len(message_path_full)==0:
+    if len(file_path.get()) == 0:
         Error_Status = True
         Error_Message += "Path not selected\n"
-    if public_encrypt_key_selected is None:
+    if len(file_name.get()) == 0:
+        Error_Status = True
+        Error_Message += "File name not input\n"
+    if public_encrypt_key_selected is None and Encrypt_message_selected:
         Error_Status = True
         Error_Message += "No Public keys found\n"
-    if private_sing_key_selected is None:
+    if private_sing_key_selected is None and Sing_message_selected:
         Error_Status = True
         Error_Message += "No Private keys found\n"
 
     global root_global
     global labelErrormMessage
     global panelErrorPanel
+    print(user_input)
     if not Error_Status:
-        labelErrormMessage.config(text="")
-        construct_message(message_path_full, message, time.time(), user_input,
-                      private_sing_key_selected, public_encrypt_key_selected,
-                      Sign_method, Encrypt_method, Sing_message_selected, Zip_Selected, Radix64_Selected)
+        try:
+            encrypted_message = construct_message(file_name.get(), message, time.time(), user_input,
+                            private_sing_key_selected, public_encrypt_key_selected,
+                            Sign_method, Encrypt_method, Sing_message_selected, Zip_Selected, Radix64_Selected)
+            with open(message_path_full, 'wb') as file:
+                file.write(encrypted_message)
+
+            panelErrorPanel = Frame(root_global, bg='lightgray', height=100)
+            panelErrorPanel.grid(row=20, column=0, sticky='nsew')
+            labelErrormMessage = Label(panelErrorPanel, bg='lightgray', fg='green', text="Message Send ")
+            labelErrormMessage.grid(row=0, column=0, padx=0, pady=2)
+            text_input_text.delete('1.0', END)
+            file_name.config(text="")
+            file_path.configure(state=NORMAL)
+            file_path.delete(0, END)
+            file_path.insert(0, "")
+            file_path.configure(state=DISABLED)
+            resetPanles()
+
+        except ValueError as error:
+            print(str(error))
+            panelErrorPanel = Frame(root_global, bg='lightgray', height=100)
+            panelErrorPanel.grid(row=20, column=0, sticky='nsew')
+            labelErrormMessage = Label(panelErrorPanel, bg='lightgray', fg='red', text=str(error))
+            labelErrormMessage.grid(row=0, column=0, padx=0, pady=2)
+
     else:
         panelErrorPanel = Frame(root_global, bg='lightgray', height=100)
         panelErrorPanel.grid(row=20, column=0, sticky='nsew')
         labelErrormMessage = Label(panelErrorPanel, bg='lightgray', fg='red', text=Error_Message)
         labelErrormMessage.grid(row=0, column=0, padx=0, pady=2)
+
 
 canvas = None
 
@@ -456,8 +539,7 @@ def gui_mess_send(rootin):
     global des3_cb
     global labelErrormMessage
 
-    if labelErrormMessage:
-        labelErrormMessage.config(text="")
+
 
     root_global = frame
     panel0 = Frame(frame, bg='lightgray', height=100)
