@@ -351,6 +351,7 @@ def generate_session_key(session_algorithm):
         None
 
 
+
 def tamper_signature(signature):
     byte_array = bytearray(signature)
     byte_array[3] = 0x8c

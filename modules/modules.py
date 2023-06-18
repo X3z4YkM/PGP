@@ -25,5 +25,5 @@ def get_current_time():
 
 
 def create_path(path):
-    dir_path = os.path.dirname(path)
-    os.makedirs(dir_path, exist_ok=True)
+    file_path = os.path.join(path)
+    return file_path
