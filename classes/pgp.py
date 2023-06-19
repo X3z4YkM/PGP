@@ -56,6 +56,8 @@ PGPMessageDict = {
 
 ReceivedDict = {
     "message": "",
+    "filename": "",
+    "timestamp": "",
     "signature": None,
     "signature_valid": False
 }
@@ -114,7 +116,7 @@ def construct_message(filename, message, message_time, key_password, signing_key
         if sign_encrypt_choice == constants.SIGN_ENC_RSA:
             signature = sign_rsa(message_hash, signing_key)
         elif sign_encrypt_choice == constants.SIGN_ENC_DSA_ELGAMAL:
-            signature = signature_dsa(message_hash, signing_key)
+            signature = sign_dsa(message_hash, signing_key)
         # signature = tamper_signature(signature)
         my_signature["signature"] = signature
 
@@ -212,12 +214,13 @@ def extract_and_validate_message_2(my_pgp, user: User, key_password):
 
     my_message = deserialized_message_signature["message"]
     my_received = ReceivedDict.copy()
-    my_received["message"] = str(my_message["filename"]) + "\n" + datetime.datetime.fromtimestamp(
-        my_message["timestamp"]).strftime('%H:%M:%S %d-%m-%Y') + "\n" + str(my_message["data"])
+    my_received["message"] = my_message["data"]
+    my_received["filename"] = my_message["filename"]
+    my_received["timestamp"] = datetime.datetime.fromtimestamp(my_message["timestamp"]).strftime('%H:%M:%S %d-%m-%Y')
     my_signature = deserialized_message_signature["signature"]
     # check signature
     if my_pgp["signed"]:
-        my_received["signature"] = my_signature["signature"]
+        my_received["signature"] = my_signature["signature"].hex()
         message_hash = SHA1.new(pickle.dumps(my_message))
         message_digest = message_hash.digest()
         if my_signature["leading_octets"] != message_digest[:2]:
@@ -249,7 +252,7 @@ def verify_rsa(message_hash, signature, signature_check_key: RSA.RsaKey):
     return signer.verify(message_hash, signature)
 
 
-def signature_dsa(message_hash, signing_key: DSA.DsaKey):
+def sign_dsa(message_hash, signing_key: DSA.DsaKey):
     signer = DSS.new(signing_key, 'fips-186-3')
     signed_hash = signer.sign(message_hash)
     return signed_hash

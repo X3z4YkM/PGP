@@ -423,9 +423,10 @@ def send_message():
             Sign_method = constants.SIGN_ENC_DSA_ELGAMAL
 
     private_sing_key_selected = None
+    global counter_sign
     if sign_var.get() and (rsa_var.get() or dsa_var.get()):
         if len(key_array_sign) > 0:
-            private_sing_key_selected = key_array_sign[0].get('pair')
+            private_sing_key_selected = key_array_sign[counter_sign].get('pair')
 
     Encrypt_message_selected = False
 
@@ -438,9 +439,10 @@ def send_message():
             Encrypt_method = constants.ALGORITHM_DES3
 
     public_encrypt_key_selected = None
+    global counter_enc
     if en_var.get() and (aes_var.get() or des3_var.gett()):
         if len(key_array_enc) > 0:
-            public_encrypt_key_selected = key_array_enc[0].get('pair')
+            public_encrypt_key_selected = key_array_enc[counter_enc].get('pair')
 
     Zip_Selected = False
 
