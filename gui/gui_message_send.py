@@ -435,12 +435,12 @@ def send_message():
         Encrypt_message_selected = True
         if aes_var.get():
             Encrypt_method = constants.ALGORITHM_AES
-        elif des3_var.gett():
+        elif des3_var.get():
             Encrypt_method = constants.ALGORITHM_DES3
 
     public_encrypt_key_selected = None
     global counter_enc
-    if en_var.get() and (aes_var.get() or des3_var.gett()):
+    if en_var.get() and (aes_var.get() or des3_var.get()):
         if len(key_array_enc) > 0:
             public_encrypt_key_selected = key_array_enc[counter_enc].get('pair')
 
