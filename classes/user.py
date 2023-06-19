@@ -105,9 +105,9 @@ class User:
 
     def import_private_key(self, path, key_password):
         print("[IMPORT STARTED] ...")
-        file = open(path, 'rb')
-        key_pem = file.read()
-        file.close()
+        with open(path, 'rb') as file:
+            key_pem = file.read()
+
         decrypted_key = self.decrypt_private_key(key_pem, key_password)
 
         if check_rsa_key_header_private(decrypted_key):
@@ -144,9 +144,8 @@ class User:
             encrypted_pr_key = elem.get("private_key")
             print("[EXPORT STARTED] ...")
             create_path(path)
-            file = open(path, 'wb')
-            file.write(encrypted_pr_key)
-            file.close()
+            with open(path, 'wb') as file:
+                file.write(encrypted_pr_key)
             print("[EXPORTED KEY] ...")
 
         except ValueError as e:
@@ -154,9 +153,9 @@ class User:
 
     def import_public_key(self, path):
         print("[IMPORTING PUBLIC KEY]")
-        file = open(path, 'rb')
-        key = file.read()
-        file.close()
+        with open(path, 'rb') as file:
+            key = file.read()
+
         try:
             public_key = RSA.import_key(key).export_key(format='PEM')
         except ValueError:
@@ -181,9 +180,8 @@ class User:
         key = self.search_private_key(key_id)
         print("[EXPORT STARTED] ...")
         create_path(path)
-        file = open(path, 'wb')
-        file.write(key.get("public_key"))
-        file.close()
+        with open(path, 'wb') as file:
+            file.write(key.get("public_key"))
         print("[EXPORTED KEY] ...")
 
 
@@ -300,11 +298,11 @@ class User:
         for key in self.public_key_chain:
             if key.get("key_id") == key_id:
                 return key
-        raise ValueError(f"No public key with id: {hex(key_id)}")
+        raise ValueError(f"No public key with id: {key_id.hex()}")
     def search_private_key(self, key_id):
         """This method returns encrypted private key"""
 
         for key in self.private_key_chain:
             if key.get("key_id") == key_id:
                 return key
-        raise ValueError(f"No private key with id: {hex(key_id)}")
+        raise ValueError(f"No private key with id: {key_id.hex()}")
