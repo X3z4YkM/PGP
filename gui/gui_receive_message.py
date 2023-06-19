@@ -65,6 +65,7 @@ def decode_message():
             user_input = simpledialog.askstring(f"Input for key_id : {key_id.hex()}", f"Enter password: ")
         my_received = pgp.extract_and_validate_message_2(data, global_var.get('user'), user_input)
         global Text_recodr
+        valuetest1 = json.dumps(my_received, indent=4)
         panle_error.grid_remove()
         Text_recodr.insert(END, json.dumps(my_received, indent=4))
         panel_success.grid(row=5, column=0, sticky='nsew')
@@ -72,7 +73,7 @@ def decode_message():
     except ValueError as error:
         panel_success.grid_remove()
         panle_error.grid(row=4, column=0, sticky='nsew')
-        message_error = Label(panle_error, bg='lightgray', fg='red', text=error)
+        message_error = Label(panle_error, bg='lightgray', fg='red', text=str(error))
 
 
 frame = None
