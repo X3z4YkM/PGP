@@ -155,21 +155,24 @@ def construct_message(filename, message, message_time, key_password, signing_key
 
 
 def extract_and_validate_message_1(received_data):
-    pp = pprint.PrettyPrinter(depth=4)
+    try:
+        pp = pprint.PrettyPrinter(depth=4)
 
-    my_received = ReceivedDict.copy()
-    if received_data[:8] == b'radixb64':
-        my_pgp = pickle.loads(decode_if_base64(received_data[8:]))
-    else:
-        my_pgp = pickle.loads(received_data)
-    print("my_pgp")
-    print(my_pgp["radix64"])
-    print("zipped:", my_pgp["zip"])
-    print("signed:", my_pgp["signed"])
-    print(my_pgp["secrecy"])
-    print(my_pgp["authentication"])
-    pp.pprint(my_pgp["payload"])
-    return my_pgp, my_pgp["payload"]["session_key_component"]["recipient_key_id"]
+        my_received = ReceivedDict.copy()
+        if received_data[:8] == b'radixb64':
+            my_pgp = pickle.loads(decode_if_base64(received_data[8:]))
+        else:
+            my_pgp = pickle.loads(received_data)
+        print("my_pgp")
+        print(my_pgp["radix64"])
+        print("zipped:", my_pgp["zip"])
+        print("signed:", my_pgp["signed"])
+        print(my_pgp["secrecy"])
+        print(my_pgp["authentication"])
+        pp.pprint(my_pgp["payload"])
+        return my_pgp, my_pgp["payload"]["session_key_component"]["recipient_key_id"]
+    except ValueError as error:
+        raise error
 
 
 def extract_and_validate_message_2(my_pgp, user: User, key_password):

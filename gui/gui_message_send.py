@@ -71,18 +71,17 @@ def prev_key():
     if counter_sign > 0:
         counter_sign -= 1
         text1.delete("1.0", END)
-        text1.insert(END, key_array_sign[counter_sign].get('public_key'))
+        text1.insert(END, key_array_sign[counter_sign].get('key'))
 
 
 def next_key():
     global counter_sign
     global text1
     global key_array_sign
-
     if counter_sign < len(key_array_sign) - 1:
         counter_sign += 1
         text1.delete("1.0", END)
-        text1.insert(END, key_array_sign[counter_sign].get('public_key'))
+        text1.insert(END, key_array_sign[counter_sign].get('key'))
 
 
 def reste_view():
@@ -628,7 +627,7 @@ def gui_mess_send(rootin):
 
     panel10 = Frame(frame, bg='lightgray', height=100)
     panel10.grid(row=11, column=0, sticky='nsew')
-    text_label = Label(panel10, bg='lightgray', text="==========[ENETER TEXT]==========")
+    text_label = Label(panel10, bg='lightgray', text="==========[ENTER TEXT]==========")
     text_label.grid(row=0, column=0, padx=0, pady=2)
     text_input_text = Text(panel10, width=50, height=15)
     text_input_text.grid(row=1, column=0, padx=0, pady=2)

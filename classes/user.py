@@ -336,7 +336,7 @@ class User:
     def get_public_key_chain_alt(self):
         temp_arr = []
         for pair in self.public_key_chain:
-            temp_arr.append({'public_key': pair.get('public_key'), 'key_id': pair.get('key_id'), 'pair':pair})
+            temp_arr.append({'public_key': pair.get('public_key'), 'key_id': pair.get('key_id'), 'pair': pair})
         return temp_arr
 
     def show_keychain_private(self, password_in):
@@ -352,9 +352,11 @@ class User:
         for key in self.public_key_chain:
             if key.get("key_id") == key_id:
                 return key
-
+        raise ValueError(f"No public key with id: {hex(key_id)}")
     def search_private_key(self, key_id):
         """This method returns encrypted private key"""
+
         for key in self.private_key_chain:
             if key.get("key_id") == key_id:
                 return key
+        raise ValueError(f"No private key with id: {hex(key_id)}")
