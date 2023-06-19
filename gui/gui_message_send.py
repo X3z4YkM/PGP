@@ -46,6 +46,17 @@ labelErrormMessage = None
 
 
 
+def key_array_enc_formater(key_pair):
+    return f"'public_key': {key_pair.get('public_key')}\n" \
+                 f"'owner_email': {key_pair.get('owner_email')}\n"\
+                 f"'time_stamp': {key_pair.get('time_stamp')}\n"\
+                 f"'key_id': {key_pair.get('key_id').hex()}"
+
+def key_array_sign_formater(dec_key,key_pair):
+    return f"'private_key': {dec_key}\n" \
+                 f"'owner_emial': {key_pair.get('user_id')}\n" \
+                 f"'time_stamp': {key_pair.get('time_stamp')}\n"\
+                 f"'key_id': {key_pair.get('key_id').hex()}"
 
 def select_directory():
     global file_path
@@ -71,7 +82,7 @@ def prev_key():
     if counter_sign > 0:
         counter_sign -= 1
         text1.delete("1.0", END)
-        text1.insert(END, key_array_sign[counter_sign].get('key'))
+        text1.insert(END, key_array_sign_formater(key_array_sign[counter_sign].get('key'),key_array_sign[counter_sign].get('pair')))
 
 
 def next_key():
@@ -81,7 +92,7 @@ def next_key():
     if counter_sign < len(key_array_sign) - 1:
         counter_sign += 1
         text1.delete("1.0", END)
-        text1.insert(END, key_array_sign[counter_sign].get('key'))
+        text1.insert(END, key_array_sign_formater(key_array_sign[counter_sign].get('key'),key_array_sign[counter_sign].get('pair')))
 
 
 def reste_view():
@@ -98,12 +109,12 @@ def reste_view():
             counter_sign = 0
             key_array_sign = user.get_by_header('RSA', user_input)
             text1.delete("1.0", END)
-            text1.insert(END, key_array_sign[0].get('key'))
+            text1.insert(END, key_array_sign_formater(key_array_sign[0].get('key'), key_array_sign[0].get('pair')))
         elif selected == 2:
             counter_sign = 0
             key_array_sign = user.get_by_header('DSA', user_input)
             text1.delete("1.0", END)
-            text1.insert(END, key_array_sign[0].get('key'))
+            text1.insert(END, key_array_sign_formater(key_array_sign[0].get('key'),key_array_sign[0].get('pair')))
 
 
 was_selected = 0
@@ -159,13 +170,13 @@ def toggle_options_sig():
             key_array_sign = user.get_by_header('RSA', user_input)
             text1.delete("1.0", END)
             if len(key_array_sign) > 0:
-                text1.insert(END, key_array_sign[0].get('key'))
+                text1.insert(END, key_array_sign_formater(key_array_sign[0].get('key'),key_array_sign[0].get('pair')))
         elif selected == 2:
             counter_sign = 0
             key_array_sign = user.get_by_header('DSA', user_input)
             text1.delete("1.0", END)
             if len(key_array_sign) > 0:
-                text1.insert(END, key_array_sign[0].get('key'))
+                text1.insert(END, key_array_sign_formater(key_array_sign[0].get('key'), key_array_sign[0].get('pair')))
     else:
         panel3.destroy()
         panel4.destroy()
@@ -224,13 +235,13 @@ def show_key_sig(num):
             key_array_sign = user.get_by_header('RSA', user_input)
             text1.delete("1.0", END)
             if len(key_array_sign) > 0:
-                text1.insert(END, key_array_sign[0].get('key'))
+                text1.insert(END, key_array_sign_formater(key_array_sign[0].get('key'),key_array_sign[0].get('pair')))
         elif selected == 2:
             counter_sign = 0
             key_array_sign = user.get_by_header('DSA', user_input)
             text1.delete("1.0", END)
             if len(key_array_sign) > 0:
-                text1.insert(END, key_array_sign[0].get('key'))
+                text1.insert(END, key_array_sign_formater(key_array_sign[0].get('key'),key_array_sign[0].get('pair')))
 
 
 selected_enc = 0
@@ -245,7 +256,7 @@ def prev_key_en():
     if counter_enc > 0:
         counter_enc -= 1
         text1_en.delete("1.0", END)
-        text1_en.insert(END, key_array_enc[counter_enc].get('public_key'))
+        text1_en.insert(END, key_array_enc_formater(key_array_enc[counter_enc].get('pair')))
 
 
 def next_key_en():
@@ -256,7 +267,7 @@ def next_key_en():
     if counter_enc < len(key_array_enc) - 1:
         counter_enc += 1
         text1_en.delete("1.0", END)
-        text1_en.insert(END, key_array_enc[counter_enc].get('public_key'))
+        text1_en.insert(END, key_array_enc_formater(key_array_enc[counter_enc].get('pair')))
 
 def resetPanles():
     global panel2
@@ -355,7 +366,7 @@ def key_show_enc(num):
         key_array_enc = user.get_public_key_chain_alt()
         text1_en.delete("1.0", END)
         if len(key_array_enc) > 0:
-            text1_en.insert(END, key_array_enc[0].get('public_key'))
+            text1_en.insert(END, key_array_enc_formater(key_array_enc[0].get('pair')))
 
 
 def to_en_op():

@@ -1,4 +1,6 @@
 from datetime import datetime
+from tkinter import simpledialog
+
 from Crypto.IO import PEM
 from Crypto.Hash import SHA1
 from Crypto.Random import get_random_bytes
@@ -84,7 +86,8 @@ class User:
             "public_key": public_key,
             "user_id": self.email,
             "key_id": key_id,
-            "time_stamp": get_current_time()
+            "time_stamp": get_current_time(),
+            "owner_email": self.email
         })
         return key
 
@@ -99,72 +102,6 @@ class User:
     @staticmethod
     def derive_key_id(public_key):
         return SHA1.new(public_key).digest()[-8:]
-
-    def import_key_from_file_alter(self, path):
-        print("[IMPORT STARTED] ...")
-        file = open(path, 'rb')
-        key = file.read()
-        file.close()
-        key_data = key.split(b"****NEWKEY****")[:-1]
-        for key_piece in key_data:
-            time_of_creation, key_id, public_key, encrypted_pr_key, user_id = key_piece.split(b"*--*")
-            time_of_creation = datetime.fromisoformat(time_of_creation.decode())
-            key_id = int(key_id.decode())
-            user_id = str(user_id.decode())
-
-            # decrypt the key - ask use for password for the private keys
-            key_password = input("[ENTER PASSWORD] >: ")
-
-            """
-            First we make a SHA1 object for hashing the given password
-            then we take the least 16 bytes of the hashed value
-            then we use CAST-128 to decrypt the key
-            """
-
-            sha1_hash = SHA1.new()
-            sha1_hash.update(key_password.encode())
-            key_password = sha1_hash.digest()[:16]
-            cast128_object = CAST.new(key_password, CAST.MODE_ECB)
-            private_key_decrypted = unpad(cast128_object.decrypt(encrypted_pr_key), CAST.block_size)
-
-            self.private_key_chain.append({
-                "private_key": private_key_decrypted,
-                "public_key": public_key,
-                "public_key_info": {
-                    "time_of_creation": time_of_creation,
-                    "key_id": key_id,
-                    "owner_trust": True,
-                    "user_id": self.id
-                },
-                "private_key_info": {
-                    "time_of_creation": time_of_creation,
-                    "key_id": key_id,
-                    "public_key": public_key,
-                    "encrypted_pr_key": None,
-                    "user_id": user_id
-                },
-                "password": key_password
-            })
-        print("[IMPORTED KEY] ...")
-
-    def export_key_to_file_alter(self, local_key_chain, path):
-        pem_data = b""
-        """ 
-        We take every pair public/private keys and create a private keychain for exporting
-        !!This method will be renamed to south the specific purpose of creating private keychain!!  
-        """
-        for pair in local_key_chain:
-            pem_data += (pair.get("private_key_info").get("time_of_creation").isoformat().encode('utf-16') + b"*--*"
-                         + str(pair.get("private_key_info").get("key_id")).encode('utf-16') + b"*--*"
-                         + pair.get("private_key_info").get("public_key") + b"*--*"
-                         + pair.get("private_key_info").get("encrypted_pr_key") + b"*--*"
-                         + str(pair.get("private_key_info").get("user_id")).encode('utf-16') + b"****NEWKEY****")
-        print("[EXPORT STARTED] ...")
-        file_path = create_path(path)
-        file = open(file_path, 'wb')
-        file.write(pem_data)
-        file.close()
-        print("[EXPORTED KEY] ...")
 
     def import_private_key(self, path, key_password):
         print("[IMPORT STARTED] ...")
@@ -186,7 +123,16 @@ class User:
             "password": key_password,
             "key_id": key_id,
             "time_stamp": get_current_time(),
-            "user_id": self.email
+            "user_id": self.email,
+            "owner_name": self.name
+        })
+
+        self.public_key_chain.append({
+            "public_key": public_key,
+            "user_id": self.id,
+            "key_id": key_id,
+            "time_stamp": get_current_time(),
+            "owner_email": self.email
         })
         print("[IMPORTED KEY] ...")
 
@@ -220,11 +166,13 @@ class User:
                 raise ValueError("Invalid or unknown key PEM format!")
 
         key_id = self.derive_key_id(public_key)
+        owner_email = simpledialog.askstring("Input", f"Enter owner email for key_id:{key_id.hex()}: ")
         self.public_key_chain.append({
             "public_key": public_key,
             "user_id": self.id,
             "key_id": key_id,
-            "time_stamp": get_current_time()
+            "time_stamp": get_current_time(),
+            "owner_email": owner_email
         })
         print("[IMPORTED PUBLIC KEY]")
 

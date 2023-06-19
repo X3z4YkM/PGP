@@ -8,12 +8,19 @@ counter = 0
 key_array = []
 
 
+def key_array_enc_formater(key_pair):
+    return f"'public_key': {key_pair.get('public_key')}\n" \
+                 f"'owner_email': {key_pair.get('owner_email')}\n"\
+                 f"'time_stamp': {key_pair.get('time_stamp')}\n"\
+                 f"'key_id': {key_pair.get('key_id').hex()}"
+
+
 def prev_key():
     global counter
     if counter > 0:
         counter -= 1
         text0.delete("1.0", END)
-        text0.insert(END, key_array[counter])
+        text0.insert(END, key_array_enc_formater(key_array[counter]))
 
 
 def next_key():
@@ -21,7 +28,7 @@ def next_key():
     if counter < len(key_array) - 1:
         counter += 1
         text0.delete("1.0", END)
-        text0.insert(END, key_array[counter])
+        text0.insert(END, key_array_enc_formater(key_array[counter]))
 
 
 def gui_view_global_keys(root):
@@ -56,4 +63,4 @@ def gui_view_global_keys(root):
     key_array = user.get_public_key_chain()
     if len(key_array) > 0:
         text0.delete("1.0", END)
-        text0.insert(END, key_array[0])
+        text0.insert(END, key_array_enc_formater(key_array[0]))

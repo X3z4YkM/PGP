@@ -1,4 +1,5 @@
 import tkinter
+from itertools import product
 from tkinter import *
 from tkinter import filedialog as fd, simpledialog, filedialog
 import classes.pgp as pgp
@@ -61,7 +62,7 @@ def decode_message():
 
         if key_id:
             private_key = global_var.get('user').search_private_key(key_id)
-            user_input = simpledialog.askstring(f"Input for key_id : {hex(key_id)}", f"Enter password: ")
+            user_input = simpledialog.askstring(f"Input for key_id : {key_id.hex()}", f"Enter password: ")
         my_received = pgp.extract_and_validate_message_2(data, global_var.get('user'), user_input)
         global Text_recodr
         panle_error.grid_remove()

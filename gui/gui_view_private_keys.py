@@ -13,15 +13,27 @@ counter = 0
 key_array = []
 
 
+def key_array_enc_formater(key_pair):
+    return f"'public_key': {key_pair.get('public_key')}\n" \
+                 f"'owner_email': {key_pair.get('owner_email')}\n"\
+                 f"'time_stamp': {key_pair.get('time_stamp')}\n"\
+                 f"'key_id': {key_pair.get('key_id').hex()}"
+
+def key_array_sign_formater(dec_key,key_pair):
+    return f"'private_key': {dec_key}\n" \
+                 f"'owner_emial': {key_pair.get('user_id')}\n" \
+                 f"'time_stamp': {key_pair.get('time_stamp')}\n"\
+                 f"'key_id': {key_pair.get('key_id').hex()}"
+
 def prev_key():
     global counter
     if counter > 0:
         counter -= 1
         text0.delete("1.0", END)
-        text0.insert(END, key_array[counter].get('private_key'))
+        text0.insert(END, key_array_sign_formater(key_array[counter].get('key'), key_array[counter].get('pair')))
 
         text1.delete("1.0", END)
-        text1.insert(END, key_array[counter].get('public_key'))
+        text1.insert(END, key_array_enc_formater(key_array[counter].get('pair')))
 
 
 def next_key():
@@ -29,10 +41,10 @@ def next_key():
     if counter < len(key_array)-1:
         counter += 1
         text0.delete("1.0", END)
-        text0.insert(END, key_array[counter].get('private_key'))
+        text0.insert(END,  key_array_sign_formater(key_array[counter].get('key'), key_array[counter].get('pair')))
 
         text1.delete("1.0", END)
-        text1.insert(END, key_array[counter].get('public_key'))
+        text1.insert(END, key_array_enc_formater(key_array[counter].get('pair')))
 
 
 def reste_view():
@@ -45,10 +57,10 @@ def reste_view():
         key_array = user.show_key_chain(user_input)
         if len(key_array) > 0:
             text0.delete("1.0", END)
-            text0.insert(END, key_array[0].get('private_key'))
+            text0.insert(END, key_array_sign_formater(key_array[0].get('key'), key_array[0].get('pair')))
 
             text1.delete("1.0", END)
-            text1.insert(END, key_array[0].get('public_key'))
+            text1.insert(END, key_array_enc_formater(key_array[0].get('pair')))
 
 
 def gui_view_keys(root):
@@ -97,10 +109,10 @@ def gui_view_keys(root):
     user_input = simpledialog.askstring("Input", f"Enter password: ")
     if user_input is not None:
         user = global_var.get('user')
-        key_array = user.show_key_chain(user_input)
+        key_array = user.get_private_keys(user_input)
         if len(key_array) > 0:
             text0.delete("1.0", END)
-            text0.insert(END, key_array[0].get('private_key'))
+            text0.insert(END,  key_array_sign_formater(key_array[0].get('key'), key_array[0].get('pair')))
 
             text1.delete("1.0", END)
-            text1.insert(END, key_array[0].get('public_key'))
+            text1.insert(END, key_array_enc_formater(key_array[0].get('pair')))
