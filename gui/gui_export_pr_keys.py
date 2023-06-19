@@ -11,6 +11,11 @@ list_ids = None
 user_input = None
 
 
+
+def format_key(key, pair):
+    return f"{pair.get('owner_email')}_{pair.get('key_id').hex()}_{key[0:100]}"
+
+
 def search_for_id(value):
     for elem in key_id_arr:
         if elem.get('key') == value:
@@ -44,7 +49,7 @@ def reset():
         user = global_var.get('user')
         key_id_arr = user.get_private_keys(user_input)
         for elem in key_id_arr:
-            list_ids.insert(END, elem.get('key'))
+            list_ids.insert(END, format_key(elem.get('key'), elem.get('pair')))
 
 
 def gui_export_private_keys(root):
@@ -81,4 +86,4 @@ def gui_export_private_keys(root):
         user = global_var.get('user')
         key_id_arr = user.get_private_keys(user_input)
         for elem in key_id_arr:
-            list_ids.insert(END, elem.get('key'))
+            list_ids.insert(END, format_key(elem.get('key'), elem.get('pair')))

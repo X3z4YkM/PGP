@@ -10,6 +10,9 @@ key_id_arr = None
 list_ids = None
 user_input = None
 
+def format_key(pair):
+    return f"{pair.get('owner_email')}_{pair.get('key_id').hex()}_{pair.get('public_key')[0:100]}"
+
 
 def search_for_id(value):
     for elem in key_id_arr:
@@ -44,7 +47,7 @@ def reset():
     user = global_var.get('user')
     key_id_arr = user.get_public_key_chain()
     for elem in key_id_arr:
-        list_ids.insert(END, elem.get('public_key'))
+        list_ids.insert(END, format_key(elem))
 
 
 def gui_export_public_keys(root):
@@ -80,4 +83,4 @@ def gui_export_public_keys(root):
     user = global_var.get('user')
     key_id_arr = user.get_public_key_chain()
     for elem in key_id_arr:
-        list_ids.insert(END, elem.get('public_key'))
+        list_ids.insert(END, format_key(elem))
