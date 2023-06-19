@@ -175,7 +175,6 @@ class User:
         })
         print("[IMPORTED PUBLIC KEY]")
 
-
     def export_public_key(self, path, key_id=None):
         key = self.search_private_key(key_id)
         print("[EXPORT STARTED] ...")
@@ -184,11 +183,10 @@ class User:
             file.write(key.get("public_key"))
         print("[EXPORTED KEY] ...")
 
-
     def check_heder(self, key_data):
         key_str = key_data.decode('utf-8')
         pattern1 = r'^.*-----BEGIN RSA PRIVATE'
-        pattern2 =  r'^.*-----BEGIN PRIVATE'
+        pattern2 = r'^.*-----BEGIN PRIVATE'
         return re.match(pattern1, key_str) or re.match(pattern2, key_str)
 
     def check_filter_heder(self, key_data, filter):
@@ -232,7 +230,7 @@ class User:
             try:
                 decrypted_key = cast128_object.decrypt(pair.get("private_key"))
                 if self.check_heder(decrypted_key):
-                    tem_arr.append({'key': decrypted_key, 'id': pair.get('key_id'), 'pair':pair})
+                    tem_arr.append({'key': decrypted_key, 'id': pair.get('key_id'), 'pair': pair})
             except ValueError:
                 pass
         return tem_arr
@@ -299,6 +297,7 @@ class User:
             if key.get("key_id") == key_id:
                 return key
         raise ValueError(f"No public key with id: {key_id.hex()}")
+
     def search_private_key(self, key_id):
         """This method returns encrypted private key"""
 
