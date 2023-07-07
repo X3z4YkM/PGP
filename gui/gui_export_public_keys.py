@@ -16,7 +16,7 @@ def format_key(pair):
 
 def search_for_id(value):
     for elem in key_id_arr:
-        if elem.get('public_key') == value:
+        if elem.get('pair').get('key_id').hex() == value:
             return elem.get('key_id')
 
 

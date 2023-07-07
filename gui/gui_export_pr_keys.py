@@ -13,12 +13,12 @@ user_input = None
 
 
 def format_key(key, pair):
-    return f"{pair.get('owner_email')}_{pair.get('key_id').hex()}_{key[0:100]}"
+    return f"{pair.get('user_id')}_{pair.get('key_id').hex()}_{key[0:100]}"
 
 
 def search_for_id(value):
     for elem in key_id_arr:
-        if elem.get('key') == value:
+        if elem.get('pair').get('key_id').hex() == value:
             return elem.get('id')
 
 
@@ -32,6 +32,7 @@ def export():
             file_path = filedialog.asksaveasfilename(defaultextension=".pem")
             if file_path:
                 item = list_ids.get(index)
+                item = item.split("_")[1]
                 key_id = search_for_id(item)
                 user.export_private_key(file_path, key_id, user_input)
                 index_to_delete.append(index)

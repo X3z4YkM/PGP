@@ -46,8 +46,6 @@ def import_files():
         remove_arr.clear()
 
 
-
-
 def select_file():
     filetypes = (
         ('pem files', '*.pem'),
